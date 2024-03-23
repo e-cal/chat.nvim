@@ -17,15 +17,15 @@ Using lazy.nvim
 
 ```lua
 {
-    "e-cal/chat.nvim",
-    dependencies = {
-        "MunifTanjim/nui.nvim",
-        "nvim-telescope/telescope.nvim",
-    },
-    opts = {
-        -- your config, or leave empty for defaults
-        -- (required even if empty to load plugin)
-    }
+  "e-cal/chat.nvim",
+  dependencies = {
+    "MunifTanjim/nui.nvim",
+    "nvim-telescope/telescope.nvim",
+  },
+  opts = {
+    -- your config, or leave empty for defaults
+    -- (required even if empty to load plugin)
+  }
 }
 ```
 
@@ -52,22 +52,22 @@ Using lazy.nvim
 Defaults:
 ```lua
 {
-		ui = {
-			size = 40,
-			direction = "right", -- left, right, top, bottom, center
-			wrap = true, -- line wrap (j/k are bound to gj and gk in the chat buffer so line wrap doesn't suck)
-		},
-		dir = vim.fn.stdpath("data") .. "/chat-nvim", -- dir to save/load chats
-		system = "You are an expert programmer working alongside an expert colleague. Your colleague will ask you various questions about their code and ask you to assist with some coding tasks. Answer concisely and when asked for code avoid unnecessary verbose explanation.",
-		user_prefix = "## User",
-		assistant_prefix = "### Assistant",
-		openai_api_key = function()
-			return os.getenv("OPENAI_API_KEY") or vim.fn.input("OpenAI API Key: ")
-		end,
-		default_provider = "openai", -- currently the only one supported... more to come
-		openai_model = "gpt-3.5-turbo",
-		auto_scroll = true, -- scroll to bottom of chat when response is finished
-		auto_save = true, -- save chat on response
+  ui = {
+    size = 40,
+    direction = "right", -- left, right, top, bottom, center
+    wrap = true, -- line wrap (j/k are bound to gj and gk in the chat buffer so line wrap doesn't suck)
+  },
+  dir = vim.fn.stdpath("data") .. "/chat-nvim", -- dir to save/load chats
+  system = "You are an expert programmer working alongside an expert colleague. Your colleague will ask you various questions about their code and ask you to assist with some coding tasks. Answer concisely and when asked for code avoid unnecessary verbose explanation.",
+  user_prefix = "## User",
+  assistant_prefix = "### Assistant",
+  openai_api_key = function()
+    return os.getenv("OPENAI_API_KEY") or vim.fn.input("OpenAI API Key: ")
+  end,
+  default_provider = "openai", -- currently the only one supported... more to come
+  openai_model = "gpt-3.5-turbo",
+  auto_scroll = true, -- scroll to bottom of chat when response is finished
+  auto_save = true, -- save chat on response
 }
 ```
 
