@@ -99,16 +99,16 @@ local function parse_messages(bufnr)
 	local current_content = {}
 
 	for _, line in ipairs(lines) do
-		if line:find("^"..config.opts.system_prefix) then
+		if line:find("^" .. config.opts.system_prefix) then
 			current_role = "system"
 			current_content = {}
-		elseif line:find("^"..config.opts.user_prefix) then
+		elseif line:find("^" .. config.opts.user_prefix) then
 			if current_role then
 				table.insert(messages, { role = current_role, content = table.concat(current_content, "\n") })
 			end
 			current_role = "user"
 			current_content = {}
-		elseif line:find("^"..config.opts.assistant_prefix) then
+		elseif line:find("^" .. config.opts.assistant_prefix) then
 			if current_role then
 				table.insert(messages, { role = current_role, content = table.concat(current_content, "\n") })
 			end
@@ -153,10 +153,7 @@ M.send_message = function()
 	vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, { "", config.opts.assistant_prefix, "" })
 
 	if #messages == 2 and messages[1].role == "system" then
-        print("generate_title")
 		generate_title(messages, bufnr)
-    else
-        P(messages)
 	end
 
 	local on_complete = function(err, _)
@@ -177,11 +174,11 @@ end
 
 M.delete = function()
 	local ui = require("chat.ui")
-    -- if not open and focused, return
-    if not ui.is_open() or not ui.is_focused() then
-        print("Chat is not open or focused")
-        return
-    end
+	-- if not open and focused, return
+	if not ui.is_open() or not ui.is_focused() then
+		print("Chat is not open or focused")
+		return
+	end
 	local bufnr = vim.api.nvim_get_current_buf()
 	local filename = vim.api.nvim_buf_get_name(bufnr)
 	vim.api.nvim_buf_delete(bufnr, { force = true })
