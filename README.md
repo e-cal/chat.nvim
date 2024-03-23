@@ -9,6 +9,8 @@ them, its just a simple chat window where chats are plain markdown files.
 
 My goal is more or less to combine the simplicity of [gp.nvim](https://github.com/Robitx/gp.nvim) with the flexibility of [ogpt.nvim](https://github.com/huynle/ogpt.nvim).
 
+![screenshot](https://github.com/e-cal/chat.nvim/assets/47398876/6dcadab5-32e9-4dbd-9706-d62f6fa043b4)
+
 ## Installation
 
 Using lazy.nvim
