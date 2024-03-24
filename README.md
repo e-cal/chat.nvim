@@ -31,19 +31,19 @@ Using lazy.nvim
 
 ## Usage
 
-`ChatFocus`: 
-
-### Usage Notes
-
-- `<CR>` in normal mode sends your chat message
 - `ChatFocus` has dynamic behavior:
   - _Chat is not open_: opens and focuses the chat window, with your most recent chat loaded
   - _Chat is open, not focused_: focuses the chat window
   - _Chat is open, focused_: focuses your previous editor
   - binding `ChatFocus` is the recommended way to navigate to and from the chat window, since
-    `<C-w>h/j/k/l` does not work with popups
+  `<C-w>h/j/k/l` does not work with popups
     - alternatively, `<C-w>w` does work and can also be used
-- `ChatToggle` and `ChatClose` work as expected
+- `ChatToggle` to toggle ui 
+- `ChatClose` to close ui
+- `ChatNew` to start a new chat
+- `ChatOpen` to open an existing chat
+- `ChatDelete` to delete the current chat (and close ui)
+- `<CR>` in normal mode sends your chat message
 - all history can be edited as needed and will be sent as seen in the buffer
   - be careful not to change or forget the user/assistant prefixes (set in config) or messages will be merged
 
