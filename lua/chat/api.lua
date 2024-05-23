@@ -11,25 +11,26 @@ local function get_providers()
 	}
 end
 
-M.set_provider = function(provider)
-	M.providers = M.providers or get_providers()
-	if M.providers[provider] then
-		M.current_provider = provider
+local function get_provider(model)
+	if model:find("gpt") then
+		return "openai"
+	elseif model:find("claude") then
+		return "anthropic"
 	else
-		error("Invalid provider: " .. provider)
+		return "groq"
 	end
 end
 
-M.request = function(messages, bufnr, on_complete)
+M.request = function(messages, model, bufnr, on_complete)
 	M.providers = M.providers or get_providers()
-	M.current_provider = M.current_provider or config.opts.default_provider
-	M.providers[M.current_provider].request(messages, bufnr, on_complete)
+	local provider = get_provider(model)
+	M.providers[provider].request(messages, model, bufnr, on_complete)
 end
 
-M.stream = function(messages, bufnr, on_complete)
+M.stream = function(messages, model, bufnr, on_complete)
 	M.providers = M.providers or get_providers()
-	M.current_provider = M.current_provider or config.opts.default_provider
-	M.providers[M.current_provider].stream(messages, bufnr, on_complete)
+	local provider = get_provider(model)
+	M.providers[provider].stream(messages, model, bufnr, on_complete)
 end
 
 M.exec = function(cmd, args, on_stdout, on_complete)

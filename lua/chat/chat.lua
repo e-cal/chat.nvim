@@ -19,7 +19,9 @@ M.create_new_chat = function()
 	local file = io.open(filename, "w")
 	if file then
 		file:write("# New Chat\n\n")
-		file:write("### System Message\n")
+		file:write(config.opts.model_prefix .. "\n")
+		file:write(config.opts.default_model .. "\n\n")
+		file:write(config.opts.system_prefix .. "\n")
 		file:write(config.opts.system)
 		file:write("\n\n---\n\n")
 		file:write(config.opts.user_prefix .. "\n\n")
@@ -97,25 +99,30 @@ local function parse_messages(bufnr)
 	local messages = {}
 	local current_role = nil
 	local current_content = {}
+	local model = config.opts.default_model
 
-	for _, line in ipairs(lines) do
-		if line:find("^" .. config.opts.system_prefix) then
-			current_role = "system"
-			current_content = {}
-		elseif line:find("^" .. config.opts.user_prefix) then
-			if current_role then
-				table.insert(messages, { role = current_role, content = table.concat(current_content, "\n") })
+	for i, line in ipairs(lines) do
+		if line:find("^" .. config.opts.model_prefix) then
+			model = lines[i + 1]
+		else
+			if line:find("^" .. config.opts.system_prefix) then
+				current_role = "system"
+				current_content = {}
+			elseif line:find("^" .. config.opts.user_prefix) then
+				if current_role then -- add previously got system or assistant message to the messages
+					table.insert(messages, { role = current_role, content = table.concat(current_content, "\n") })
+				end
+				current_role = "user"
+				current_content = {}
+			elseif line:find("^" .. config.opts.assistant_prefix) then
+				if current_role then -- add previously got system or user message to the messages
+					table.insert(messages, { role = current_role, content = table.concat(current_content, "\n") })
+				end
+				current_role = "assistant"
+				current_content = {}
+			elseif current_role then -- have a role? save the content for that role (handles multiline content)
+				table.insert(current_content, line)
 			end
-			current_role = "user"
-			current_content = {}
-		elseif line:find("^" .. config.opts.assistant_prefix) then
-			if current_role then
-				table.insert(messages, { role = current_role, content = table.concat(current_content, "\n") })
-			end
-			current_role = "assistant"
-			current_content = {}
-		elseif current_role then
-			table.insert(current_content, line)
 		end
 	end
 
@@ -123,12 +130,12 @@ local function parse_messages(bufnr)
 		table.insert(messages, { role = current_role, content = table.concat(current_content, "\n") })
 	end
 
-	return messages
+	return messages, model
 end
 
-local function generate_title(messages, bufnr)
-	local _messages = {
-		messages[2],
+local function generate_title(_messages, bufnr)
+	local messages = {
+		_messages[2],
 		{ role = "system", content = "Write a short (1-5 words) title for this conversation:" },
 	}
 	local on_complete = function(err, res)
@@ -144,15 +151,16 @@ local function generate_title(messages, bufnr)
 		end
 	end
 
-	api.request(_messages, bufnr, on_complete)
+	api.request(messages, config.opts.title_model, bufnr, on_complete)
 end
 
 M.send_message = function()
 	local bufnr = vim.api.nvim_get_current_buf()
-	local messages = parse_messages(bufnr)
+	local messages, model = parse_messages(bufnr)
 	vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, { "", config.opts.assistant_prefix, "" })
 
-	if #messages == 2 and messages[1].role == "system" then
+	if #messages == 2 then -- and messages[1].role == "system" then
+        print("Generating title...")
 		generate_title(messages, bufnr)
 	end
 
@@ -161,6 +169,7 @@ M.send_message = function()
 			vim.api.nvim_err_writeln("Error streaming response: " .. err)
 		end
 		vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, { "", config.opts.user_prefix, "" })
+
 		if config.opts.auto_scroll then
 			vim.cmd("normal! G")
 		end
@@ -169,7 +178,7 @@ M.send_message = function()
 		end
 	end
 
-	api.stream(messages, bufnr, on_complete)
+	api.stream(messages, model, bufnr, on_complete)
 end
 
 M.delete = function()

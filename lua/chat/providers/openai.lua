@@ -22,14 +22,16 @@ local function get_headers()
 	}
 end
 
-local function prepare_data(messages)
-	return {
-		model = config.opts.openai_model,
+local function prepare_data(messages, model)
+	local data = {
+		model = model,
 		messages = messages,
 	}
+    -- P(data)
+	return data
 end
 
-M.request = function(messages, bufnr, on_complete)
+M.request = function(messages, model, bufnr, on_complete)
 	local on_stdout = function(response_body)
 		local ok, response = pcall(vim.json.decode, response_body)
 		if not ok then
@@ -45,7 +47,7 @@ M.request = function(messages, bufnr, on_complete)
 		on_complete(nil, response)
 	end
 
-	local data = prepare_data(messages)
+	local data = prepare_data(messages, model)
 	local headers = get_headers()
 
 	local args = {
@@ -62,7 +64,7 @@ M.request = function(messages, bufnr, on_complete)
 	api.exec("curl", args, on_stdout, on_complete)
 end
 
-M.stream = function(messages, bufnr, on_complete)
+M.stream = function(messages, model, bufnr, on_complete)
 	local raw_chunks = {}
 	local on_stdout_chunk = function(chunk)
 		for line in chunk:gmatch("[^\n]+") do
@@ -118,7 +120,7 @@ M.stream = function(messages, bufnr, on_complete)
 		on_complete(err, nil)
 	end
 
-	local data = prepare_data(messages)
+	local data = prepare_data(messages, model)
 	data["stream"] = true
 	local headers = get_headers()
 
