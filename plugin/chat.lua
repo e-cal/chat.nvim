@@ -66,3 +66,12 @@ cmd("ChatResize", function(opts)
 	local size = tonumber(opts.args)
 	require("chat").resize(size)
 end, { nargs = 1 })
+
+vim.cmd([[ 
+  augroup CHAT_GROUP
+    autocmd!
+    autocmd BufNewFile,BufRead *.chat set filetype=markdown
+    autocmd BufEnter *.chat lua require('chat.core').setup_buffer(vim.api.nvim_get_current_buf())
+    autocmd BufLeave *.chat silent! write!
+  augroup END
+]])
