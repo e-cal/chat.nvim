@@ -1,6 +1,6 @@
 local Popup = require("nui.popup")
 local config = require("chat.config")
-local chat = require("chat.chat")
+local chat = require("chat.core")
 
 local M = {}
 
@@ -25,15 +25,39 @@ M.toggle = function(size, direction)
 	end
 end
 
+local function get_visual_selection()
+	vim.cmd('silent normal! "vy')
+	return vim.fn.getreg("v")
+end
+
 M.focus = function()
+	local selection = ""
+	local ft = vim.bo.filetype
+	if vim.fn.mode() == "v" or vim.fn.mode() == "V" or vim.fn.mode() == "" then
+		selection = get_visual_selection()
+	end
+
 	vim.api.nvim_set_current_win(M.popup.winid)
+
+	if selection and #selection > 0 then
+		-- add triple backticks to selection with filetype (markdown code)
+		selection = "```" .. ft .. "\n" .. selection .. "```"
+		vim.api.nvim_buf_set_lines(vim.api.nvim_get_current_buf(), -1, -1, false, vim.split(selection, "\n"))
+		vim.cmd("normal! G")
+	end
 end
 
 M.is_focused = function()
 	return vim.api.nvim_get_current_win() == M.popup.winid
 end
 
+
 M.open = function(size, direction)
+	local selection = ""
+	if vim.fn.mode() == "v" or vim.fn.mode() == "V" or vim.fn.mode() == "" then
+		selection = get_visual_selection()
+	end
+
 	if M.is_open() then
 		if M.is_focused() then
 			vim.cmd("wincmd p")
@@ -90,7 +114,7 @@ M.open = function(size, direction)
 			text = {
 				top = " Chat ",
 				top_align = "center",
-                -- todo
+				-- todo
 				-- bottom = " Model: " .. config.opts.default_provider .. " ",
 				-- bottom_align = "left",
 			},
@@ -118,11 +142,12 @@ M.open = function(size, direction)
 		pattern = tostring(M.popup.winid),
 		callback = function()
 			M.close()
-		end,
-	})
+    end,
+  })
 
-	chat.popup_open()
+  chat.popup_open(selection)
 end
+
 
 M.resize = function(size)
 	if M.is_open() then

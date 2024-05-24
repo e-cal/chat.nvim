@@ -27,7 +27,6 @@ local function prepare_data(messages, model)
 		model = model,
 		messages = messages,
 	}
-    -- P(data)
 	return data
 end
 
@@ -66,42 +65,44 @@ end
 
 M.stream = function(messages, model, bufnr, on_complete)
 	local raw_chunks = {}
+	local response_body = ""
+
 	local on_stdout_chunk = function(chunk)
-		for line in chunk:gmatch("[^\n]+") do
-			local raw_json = string.gsub(line, "^data: ", "")
+		for chunk_json in chunk:gmatch("[^\n]+") do
+			local raw_json = string.gsub(chunk_json, "^data: ", "")
 
 			table.insert(raw_chunks, raw_json)
-			local ok, path = pcall(vim.json.decode, raw_json)
+			local ok, chunk_data = pcall(vim.json.decode, raw_json)
 			if not ok then
 				goto continue
 			end
 
-			path = path.choices
-			if path == nil then
+			-- drill down data, checking for empty values
+			chunk_data = chunk_data.choices
+			if chunk_data == nil then
 				goto continue
 			end
-			path = path[1]
-			if path == nil then
+			chunk_data = chunk_data[1]
+			if chunk_data == nil then
 				goto continue
 			end
-			path = path.delta
-			if path == nil then
+			chunk_data = chunk_data.delta
+			if chunk_data == nil then
 				goto continue
 			end
-			path = path.content
-			if path == nil then
+
+			local chunk_content = chunk_data.content
+			if chunk_content == nil then
 				goto continue
 			end
 
 			local current_line = vim.api.nvim_buf_get_lines(bufnr, -2, -1, false)[1] or ""
-			current_line = current_line .. path
+			current_line = current_line .. chunk_content
 
 			local lines = vim.split(current_line, "\n", true)
+			vim.api.nvim_buf_set_lines(bufnr, -2, -1, false, { lines[1] })
 			if #lines > 1 then
-				vim.api.nvim_buf_set_lines(bufnr, -2, -1, false, { lines[1] })
 				vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, vim.list_slice(lines, 2))
-			else
-				vim.api.nvim_buf_set_lines(bufnr, -2, -1, false, { current_line })
 			end
 
 			::continue::

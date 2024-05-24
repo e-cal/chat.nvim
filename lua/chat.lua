@@ -1,7 +1,7 @@
 local config = require("chat.config")
 local ui = require("chat.ui")
 local api = require("chat.api")
-local chat = require("chat.chat")
+local chat = require("chat.core")
 
 local M = {}
 
