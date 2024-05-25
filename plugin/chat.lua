@@ -1,3 +1,9 @@
+local config = require("chat.config")
+
+-------------------------------------------------------------------------------
+--                               User Commands                               --
+-------------------------------------------------------------------------------
+
 local cmd = vim.api.nvim_create_user_command
 
 local get_direction_options = function()
@@ -54,9 +60,22 @@ cmd("ChatNew", function()
 	require("chat").new_chat()
 end, {})
 
-cmd("ChatOpen", function()
-	require("chat").open()
-end, {})
+cmd("ChatOpen", function(opts)
+	local args = vim.split(opts.args, " ")
+	local popup = false
+	for _, arg in ipairs(args) do
+		if arg == "popup" then
+			popup = true
+			break
+		end
+	end
+	require("chat").open(popup)
+end, {
+	nargs = "?",
+	complete = function(_, _, _)
+		return { "popup" }
+	end,
+})
 
 cmd("ChatDelete", function()
 	require("chat").delete()
@@ -67,11 +86,39 @@ cmd("ChatResize", function(opts)
 	require("chat").resize(size)
 end, { nargs = 1 })
 
-vim.cmd([[ 
-  augroup CHAT_GROUP
-    autocmd!
-    autocmd BufNewFile,BufRead *.chat set filetype=markdown
-    autocmd BufEnter *.chat lua require('chat.core').setup_buffer(vim.api.nvim_get_current_buf())
-    autocmd BufLeave *.chat silent! write!
-  augroup END
-]])
+-------------------------------------------------------------------------------
+--                               Auto Commands                               --
+-------------------------------------------------------------------------------
+
+local augroup = vim.api.nvim_create_augroup
+local autocmd = vim.api.nvim_create_autocmd
+
+local chat_group = augroup("_chat_nvim", { clear = true })
+
+autocmd({ "BufNewFile", "BufRead" }, {
+	group = chat_group,
+	pattern = "*.chat",
+	command = "set filetype=markdown",
+})
+
+autocmd("BufEnter", {
+	group = chat_group,
+	pattern = "*.chat",
+	callback = function()
+		require("chat.core").setup_buffer(vim.api.nvim_get_current_buf())
+	end,
+})
+
+autocmd("BufLeave", {
+	group = chat_group,
+	pattern = "*.chat",
+	command = "silent! write!",
+})
+
+autocmd("BufWritePre", {
+    group = chat_group,
+    pattern = "*.chat",
+    callback = function()
+        require("chat.utils").gq_chat(vim.api.nvim_get_current_buf())
+    end,
+})

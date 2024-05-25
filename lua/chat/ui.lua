@@ -30,12 +30,8 @@ local function get_visual_selection()
 	return vim.fn.getreg("v")
 end
 
-M.focus = function()
-	local selection = ""
+M.focus = function(selection)
 	local ft = vim.bo.filetype
-	if vim.fn.mode() == "v" or vim.fn.mode() == "V" or vim.fn.mode() == "" then
-		selection = get_visual_selection()
-	end
 
 	vim.api.nvim_set_current_win(M.popup.winid)
 
@@ -51,8 +47,8 @@ M.is_focused = function()
 	return vim.api.nvim_get_current_win() == M.popup.winid
 end
 
-
 M.open = function(size, direction)
+
 	local selection = ""
 	if vim.fn.mode() == "v" or vim.fn.mode() == "V" or vim.fn.mode() == "" then
 		selection = get_visual_selection()
@@ -62,7 +58,7 @@ M.open = function(size, direction)
 		if M.is_focused() then
 			vim.cmd("wincmd p")
 		else
-			M.focus()
+			M.focus(selection)
 		end
 		return
 	end
@@ -136,18 +132,18 @@ M.open = function(size, direction)
 		},
 	})
 
+    local ft = vim.bo.filetype
 	M.popup:mount()
 
 	vim.api.nvim_create_autocmd("WinClosed", {
 		pattern = tostring(M.popup.winid),
 		callback = function()
 			M.close()
-    end,
-  })
+		end,
+	})
 
-  chat.popup_open(selection)
+	chat.popup_open(selection, ft)
 end
-
 
 M.resize = function(size)
 	if M.is_open() then
