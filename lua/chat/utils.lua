@@ -10,21 +10,35 @@ end
 
 M.gq_chat = function(bufnr)
 	local config = require("chat.config")
-	if config.opts.auto_gq then
+	if not config.opts.auto_gq then
+		return
+	end
+
+	vim.api.nvim_buf_call(bufnr, function()
 		local buf_lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+		local start_line = 1
 		local in_code_block = false
+
 		for i, line in ipairs(buf_lines) do
 			if line:match("^```") then
+				if in_code_block then
+					-- Ending a code block
+					start_line = i + 1
+				else
+					-- Starting a code block, format the previous non-code section if any
+					if i > start_line then
+						vim.cmd("normal " .. start_line .. "GV" .. (i - 1) .. "Ggq")
+					end
+				end
 				in_code_block = not in_code_block
-			end
-			-- Only format if not in a code block and not a markdown heading
-			if not in_code_block and not line:match("^#") then
-				vim.api.nvim_buf_call(bufnr, function()
-					vim.cmd(i .. "normal gqq")
-				end)
+			elseif not in_code_block and i == #buf_lines then
+				-- If we're at the end of the file, format the last section
+				vim.cmd("normal " .. start_line .. "GV" .. i .. "Ggq")
 			end
 		end
-	end
+
+		vim.cmd("normal! G")
+	end)
 end
 
 M.yank_assistant_code = function(bufnr)

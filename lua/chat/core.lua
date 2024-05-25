@@ -12,7 +12,13 @@ M.setup_buffer = function(bufnr)
 	vim.keymap.set("n", "^", "g^", opts)
 	vim.keymap.set("n", "$", "g$", opts)
 
-	vim.cmd("setlocal textwidth=" .. (vim.api.nvim_win_get_width(0) - 10))
+	-- vim.cmd("setlocal textwidth=" .. (vim.api.nvim_win_get_width(0) - 10))
+    vim.api.nvim_buf_set_option(0, "textwidth", vim.api.nvim_win_get_width(0) - 10)
+
+    if config.opts.ui.wrap then
+        vim.api.nvim_buf_set_option(0, "wrap", true)
+        vim.api.nvim_buf_set_option(0, "linebreak", true)
+    end
 
 	vim.cmd("normal! G")
 end
@@ -82,7 +88,6 @@ M.load_last_chat = function(selection, ft)
 		vim.cmd("normal! G")
 	end
 
-	-- setup_buffer(bufnr)
 	return bufnr
 end
 
@@ -246,7 +251,7 @@ M.send_message = function()
 
 		vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, { "", "", config.opts.delimiters.user, "", "" })
 
-        utils.gq_chat(bufnr)
+		utils.gq_chat(bufnr)
 
 		if config.opts.auto_scroll then
 			vim.cmd("normal! G")

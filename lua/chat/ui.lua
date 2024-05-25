@@ -127,9 +127,6 @@ M.open = function(size, direction)
 			modifiable = true,
 			filetype = "markdown",
 		},
-		win_options = {
-			wrap = opts.wrap,
-		},
 	})
 
     local ft = vim.bo.filetype
