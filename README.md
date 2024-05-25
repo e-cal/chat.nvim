@@ -84,7 +84,6 @@ Defaults:
 - [-] Add model params to chat files
   - [x] set model inline
   - [ ] set other arbitrary params (temperature, etc)
-- [x] Add auto-yank code in chat response
 - [x] Add auto paste selection when chat is focused from visual mode
 - [ ] Add providers
   - [ ] anthropic
