@@ -19,12 +19,17 @@ M.defaults = function()
 		openai_api_key = function()
 			return os.getenv("OPENAI_API_KEY") or vim.fn.input("OpenAI API Key: ")
 		end,
-        default_title = "# New Chat",
+		default_title = "# New Chat",
 		default_model = "gpt-4o", -- currently only supports openai gpt models
 		title_model = "gpt-3.5-turbo", -- model used to generate chat titles
 		default_system_message = "You are an expert programmer working alongside an expert colleague. Your colleague will ask you various questions about their code and ask you to assist with some coding tasks. Answer concisely and when asked for code avoid unnecessary verbose explanation.",
 		auto_scroll = true, -- scroll to bottom of chat when response is finished
 		auto_gq = true, -- automatically split lines with gq (ignores code and headings)
+        scroll_on_focus = false, -- automatically scroll to the bottom when chat is focused
+		keymap = {
+			send_message = "<CR>", -- in a chat buffer, normal mode keymap to send message
+			delete_chat = "<C-d>", -- in telescope chat menu, keymap to delete a chat
+		},
 	}
 end
 

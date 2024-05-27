@@ -5,21 +5,22 @@ local M = {}
 
 M.setup_buffer = function(bufnr)
 	local opts = { noremap = true, silent = true, nowait = true, buffer = bufnr }
-	vim.keymap.set("n", "<CR>", M.send_message, opts)
-	vim.keymap.set("n", "j", "gj", opts)
-	vim.keymap.set("n", "k", "gk", opts)
-	vim.keymap.set("n", "^", "g^", opts)
-	vim.keymap.set("n", "$", "g$", opts)
+	vim.keymap.set("n", config.opts.keymap.send_message, M.send_message, opts)
 
-	-- vim.cmd("setlocal textwidth=" .. (vim.api.nvim_win_get_width(0) - 10))
 	vim.api.nvim_buf_set_option(0, "textwidth", vim.api.nvim_win_get_width(0) - 10)
 
 	if config.opts.ui.wrap then
+		vim.keymap.set("n", "j", "gj", opts)
+		vim.keymap.set("n", "k", "gk", opts)
+		vim.keymap.set("n", "^", "g^", opts)
+		vim.keymap.set("n", "$", "g$", opts)
 		vim.api.nvim_buf_set_option(0, "wrap", true)
 		vim.api.nvim_buf_set_option(0, "linebreak", true)
 	end
 
-	vim.cmd("normal! G")
+	if config.opts.scroll_on_focus then
+		vim.cmd("normal! G")
+	end
 end
 
 M.create_new_chat = function(selection, ft)
@@ -130,11 +131,10 @@ M.open = function(popup)
 					end)
 				end
 
-				--Bind <C-d> to delete the selected file
-				map("i", "<C-d>", function()
+				map("i", config.opts.keymap.delete_chat, function()
 					delete_file()
 				end)
-				map("n", "<C-d>", function()
+				map("n", config.opts.keymap.delete_chat, function()
 					delete_file()
 				end)
 				return true

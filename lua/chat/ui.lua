@@ -35,7 +35,7 @@ M.focus = function(selection)
 
 	vim.api.nvim_set_current_win(M.popup.winid)
 
-	if selection and #selection > 0 then
+	if selection ~= "" and #selection > 0 then
 		-- add triple backticks to selection with filetype (markdown code)
 		selection = "```" .. ft .. "\n" .. selection .. "```"
 		vim.api.nvim_buf_set_lines(vim.api.nvim_get_current_buf(), -1, -1, false, vim.split(selection, "\n"))
