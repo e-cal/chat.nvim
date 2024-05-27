@@ -2,6 +2,14 @@ local config = require("chat.config")
 
 local M = {}
 
+M.ensureUrlProtocol = function(str)
+	if M.startsWith(str, "https://") or M.startsWith(str, "http://") then
+		return str
+	end
+
+	return "https://" .. str
+end
+
 -- Start nil and set later to avoid circular dependencies
 M.providers = nil
 M.current_provider = nil

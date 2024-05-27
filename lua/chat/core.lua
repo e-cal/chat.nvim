@@ -1,6 +1,5 @@
 local config = require("chat.config")
 local api = require("chat.api")
-local utils = require("chat.utils")
 
 local M = {}
 
@@ -13,12 +12,12 @@ M.setup_buffer = function(bufnr)
 	vim.keymap.set("n", "$", "g$", opts)
 
 	-- vim.cmd("setlocal textwidth=" .. (vim.api.nvim_win_get_width(0) - 10))
-    vim.api.nvim_buf_set_option(0, "textwidth", vim.api.nvim_win_get_width(0) - 10)
+	vim.api.nvim_buf_set_option(0, "textwidth", vim.api.nvim_win_get_width(0) - 10)
 
-    if config.opts.ui.wrap then
-        vim.api.nvim_buf_set_option(0, "wrap", true)
-        vim.api.nvim_buf_set_option(0, "linebreak", true)
-    end
+	if config.opts.ui.wrap then
+		vim.api.nvim_buf_set_option(0, "wrap", true)
+		vim.api.nvim_buf_set_option(0, "linebreak", true)
+	end
 
 	vim.cmd("normal! G")
 end
@@ -101,14 +100,51 @@ M.open = function(popup)
 			ui.focus()
 		end
 	end
-	-- wait so the popup doesn't cover telescope
-	vim.defer_fn(function()
+
+	local sorters = require("telescope.sorters")
+	local actions = require("telescope.actions")
+	local action_state = require("telescope.actions.state")
+
+	-- Custom sorter function to sort based on timestamps
+	local timestamp_sorter = sorters.get_fzy_sorter()
+	timestamp_sorter.compare = function(a, b)
+		return a.value < b.value
+	end
+
+	local function call_telescope()
 		require("telescope.builtin").grep_string({
 			prompt_title = "Load Conversation",
 			search = "^# ",
+			sorters = timestamp_sorter,
 			use_regex = true,
 			cwd = config.opts.dir,
+			sort_lastused = true,
+			attach_mappings = function(prompt_bufnr, map)
+				local function delete_file()
+					local entry = action_state.get_selected_entry()
+					local filepath = entry.path
+					vim.cmd("silent !rm " .. filepath)
+					actions.close(prompt_bufnr)
+					vim.schedule(function()
+						call_telescope()
+					end)
+				end
+
+				--Bind <C-d> to delete the selected file
+				map("i", "<C-d>", function()
+					delete_file()
+				end)
+				map("n", "<C-d>", function()
+					delete_file()
+				end)
+				return true
+			end,
 		})
+	end
+
+	-- wait so the popup doesn't cover telescope
+	vim.defer_fn(function()
+		call_telescope()
 	end, 100)
 end
 
@@ -120,6 +156,8 @@ M.popup_open = function(selection, ft)
 	elseif vim.fn.empty(vim.fn.readdir(config.opts.dir)) == 1 then
 		new = true
 	end
+
+	new = new or selection ~= ""
 
 	local bufnr
 	if new then
@@ -251,7 +289,7 @@ M.send_message = function()
 
 		vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, { "", "", config.opts.delimiters.user, "", "" })
 
-		utils.gq_chat(bufnr)
+		M.gq_chat(bufnr)
 
 		if config.opts.auto_scroll then
 			vim.cmd("normal! G")
@@ -273,6 +311,46 @@ M.delete = function()
 	local filename = vim.api.nvim_buf_get_name(bufnr)
 	vim.api.nvim_buf_delete(bufnr, { force = true })
 	vim.fn.delete(filename)
+end
+
+M.gq_chat = function(bufnr)
+	if not config.opts.auto_gq then
+		return
+	end
+
+	vim.api.nvim_buf_call(bufnr, function()
+		local buf_lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+		local start_line = 2
+		local in_code_block = false
+		local format_sections = {} -- inclusive, 1 indexed
+
+		for i, line in ipairs(buf_lines) do
+			if line:match("```") then
+				if not in_code_block then
+					format_sections[#format_sections + 1] = { start_line, i - 1 }
+				else
+					start_line = i + 1
+				end
+				in_code_block = not in_code_block
+			end
+		end
+
+		-- catch text after the last code block
+		if not in_code_block then
+			format_sections[#format_sections + 1] = { start_line, #buf_lines }
+		end
+
+		-- P(format_sections)
+
+		-- format in reverse order so line numbers don't change
+		for i = #format_sections, 1, -1 do
+			local section = format_sections[i]
+			local s_line, e_line = section[1], section[2]
+			vim.cmd("normal " .. s_line .. "GV" .. e_line .. "Ggq")
+		end
+
+		vim.cmd("normal! G")
+	end)
 end
 
 return M
