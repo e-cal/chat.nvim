@@ -106,17 +106,48 @@ M.open = function(popup)
 		end
 	end
 
-	local sorters = require("telescope.sorters")
-	local actions = require("telescope.actions")
-	local action_state = require("telescope.actions.state")
-
-	-- Custom sorter function to sort based on timestamps
-	local timestamp_sorter = sorters.get_fzy_sorter()
-	timestamp_sorter.compare = function(a, b)
-		return a.value < b.value
-	end
-
 	local function call_telescope()
+		local previewers = require("telescope.previewers")
+		local sorters = require("telescope.sorters")
+		local actions = require("telescope.actions")
+		local action_state = require("telescope.actions.state")
+
+		local custom_previewer = previewers.new_buffer_previewer({
+			define_preview = function(self, entry, status)
+				local path = entry.path or entry.filename
+				vim.api.nvim_buf_set_option(self.state.bufnr, "filetype", "markdown")
+				vim.fn.jobstart({ "cat", path }, {
+					stdout_buffered = true,
+					on_stdout = function(_, data)
+						if data then
+							vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, data)
+						end
+					end,
+				})
+			end,
+		})
+
+		local timestamp_sorter = sorters.get_fzy_sorter()
+		timestamp_sorter.compare = function(a, b)
+			return a.value < b.value
+		end
+
+		local entry_maker = function(line)
+			local entry = require("telescope.make_entry").gen_from_vimgrep()(line)
+			if entry.value:match("1:1") then
+				local filename, lnum, col, text = line:match("^(.-):(%d+):(%d+):(.*)$")
+				entry.filename = filename
+				entry.lnum = tonumber(lnum)
+				entry.col = tonumber(col)
+				entry.text = text
+				entry.path = require("plenary.path"):new(config.opts.dir, filename):absolute()
+				entry.display = string.format("%s:%s:%s:%s", entry.filename, entry.lnum, entry.col, entry.text)
+				entry.ordinal = entry.display
+				return entry
+			end
+			return nil
+		end
+
 		require("telescope.builtin").grep_string({
 			prompt_title = "Load Conversation",
 			search = "^# ",
@@ -124,6 +155,8 @@ M.open = function(popup)
 			use_regex = true,
 			cwd = config.opts.dir,
 			sort_lastused = true,
+			entry_maker = entry_maker,
+			previewer = custom_previewer,
 			attach_mappings = function(prompt_bufnr, map)
 				local function delete_file()
 					local entry = action_state.get_selected_entry()
