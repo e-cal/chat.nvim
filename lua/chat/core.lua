@@ -54,7 +54,9 @@ M.create_new_chat = function(selection, ft)
 		-- add triple backticks to selection with filetype (markdown code)
 		selection = "```" .. ft .. "\n" .. selection .. "```"
 		vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, vim.split(selection, "\n"))
-		vim.cmd("normal! G")
+		vim.api.nvim_buf_call(bufnr, function()
+			vim.cmd("normal! G")
+		end)
 	end
 
 	vim.cmd("write")
@@ -85,7 +87,9 @@ M.load_last_chat = function(selection, ft)
 		-- add triple backticks to selection with filetype (markdown code)
 		selection = "```" .. ft .. "\n" .. selection .. "```"
 		vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, vim.split(selection, "\n"))
-		vim.cmd("normal! G")
+		vim.api.nvim_buf_call(bufnr, function()
+			vim.cmd("normal! G")
+		end)
 	end
 
 	return bufnr
@@ -292,7 +296,9 @@ M.send_message = function()
 		M.gq_chat(bufnr)
 
 		if config.opts.auto_scroll then
-			vim.cmd("normal! G")
+			vim.api.nvim_buf_call(bufnr, function()
+				vim.cmd("normal! G")
+			end)
 		end
 		vim.cmd("silent w!")
 	end
@@ -304,7 +310,7 @@ M.delete = function()
 	local bufnr = vim.api.nvim_get_current_buf()
 	local filename = vim.api.nvim_buf_get_name(bufnr)
 	vim.fn.delete(filename)
-    M.load_last_chat()
+	M.load_last_chat()
 end
 
 M.gq_chat = function(bufnr)
@@ -343,7 +349,9 @@ M.gq_chat = function(bufnr)
 			vim.cmd("normal " .. s_line .. "GV" .. e_line .. "Ggq")
 		end
 
-		vim.cmd("normal! G")
+		vim.api.nvim_buf_call(bufnr, function()
+			vim.cmd("normal! G")
+		end)
 	end)
 end
 

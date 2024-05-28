@@ -38,8 +38,11 @@ M.focus = function(selection)
 	if selection ~= "" and #selection > 0 then
 		-- add triple backticks to selection with filetype (markdown code)
 		selection = "```" .. ft .. "\n" .. selection .. "```"
-		vim.api.nvim_buf_set_lines(vim.api.nvim_get_current_buf(), -1, -1, false, vim.split(selection, "\n"))
-		vim.cmd("normal! G")
+    local bufnr = vim.api.nvim_get_current_buf()
+		vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, vim.split(selection, "\n"))
+		vim.api.nvim_buf_call(bufnr, function()
+			vim.cmd("normal! G")
+		end)
 	end
 end
 
@@ -48,7 +51,6 @@ M.is_focused = function()
 end
 
 M.open = function(size, direction)
-
 	local selection = ""
 	if vim.fn.mode() == "v" or vim.fn.mode() == "V" or vim.fn.mode() == "" then
 		selection = get_visual_selection()
