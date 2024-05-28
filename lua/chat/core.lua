@@ -141,7 +141,9 @@ M.open = function(popup)
 				entry.col = tonumber(col)
 				entry.text = text
 				entry.path = require("plenary.path"):new(config.opts.dir, filename):absolute()
-				entry.display = string.format("%s:%s:%s:%s", entry.filename, entry.lnum, entry.col, entry.text)
+				-- entry.display = string.format("%s:%s:%s:%s", entry.filename, entry.lnum, entry.col, entry.text)
+                local timestamp = os.date("%Y-%m-%d %H:%M:%S", vim.loop.fs_stat(entry.path).mtime.sec)
+				entry.display = string.format("%s (%s)", entry.text:sub(3), timestamp)
 				entry.ordinal = entry.display
 				return entry
 			end
