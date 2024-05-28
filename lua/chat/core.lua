@@ -301,16 +301,10 @@ M.send_message = function()
 end
 
 M.delete = function()
-	local ui = require("chat.ui")
-	-- if not open and focused, return
-	if not ui.is_open() or not ui.is_focused() then
-		print("Chat is not open or focused")
-		return
-	end
 	local bufnr = vim.api.nvim_get_current_buf()
 	local filename = vim.api.nvim_buf_get_name(bufnr)
-	vim.api.nvim_buf_delete(bufnr, { force = true })
 	vim.fn.delete(filename)
+    M.load_last_chat()
 end
 
 M.gq_chat = function(bufnr)
