@@ -142,7 +142,7 @@ M.open = function(popup)
 				entry.text = text
 				entry.path = require("plenary.path"):new(config.opts.dir, filename):absolute()
 				-- entry.display = string.format("%s:%s:%s:%s", entry.filename, entry.lnum, entry.col, entry.text)
-                local timestamp = os.date("%Y-%m-%d %H:%M:%S", vim.loop.fs_stat(entry.path).mtime.sec)
+				local timestamp = os.date("%Y-%m-%d %H:%M:%S", vim.loop.fs_stat(entry.path).mtime.sec)
 				entry.display = string.format("%s (%s)", entry.text:sub(3), timestamp)
 				entry.ordinal = entry.display
 				return entry
@@ -306,6 +306,12 @@ end
 M.send_message = function()
 	local bufnr = vim.api.nvim_get_current_buf()
 	local messages, model = parse_messages(bufnr)
+
+	-- if the last message in the table has role user and empty string content, return early
+	if messages[#messages].role == "user" and messages[#messages].content == "" then
+		print("skipping empty user message")
+		return
+	end
 
 	-- remove any blank lines from the end of the buffer
 	local buf_lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
