@@ -307,7 +307,6 @@ M.send_message = function()
 	local bufnr = vim.api.nvim_get_current_buf()
 	local messages, model = parse_messages(bufnr)
 
-	-- if the last message in the table has role user and empty string content, return early
 	if messages[#messages].role == "user" and messages[#messages].content == "" then
 		print("skipping empty user message")
 		return
