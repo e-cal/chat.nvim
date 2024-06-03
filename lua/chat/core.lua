@@ -4,20 +4,21 @@ local api = require("chat.api")
 local M = {}
 
 M.setup_buffer = function(bufnr)
-	local opts = { noremap = true, silent = true, nowait = true, buffer = bufnr }
-	vim.keymap.set("n", config.opts.keymap.send_message, M.send_message, opts)
+	local key_opts = { noremap = true, silent = true, nowait = true, buffer = bufnr }
+	vim.keymap.set("n", config.opts.keymap.send_message, M.send_message, key_opts)
 
-	vim.api.nvim_buf_set_option(0, "textwidth", vim.api.nvim_win_get_width(0) - 10)
+	local opts = { buf = bufnr }
+	vim.api.nvim_set_option_value("textwidth", vim.api.nvim_win_get_width(0) - 10, opts)
 
 	if config.opts.ui.wrap then
-		vim.keymap.set("n", "j", "gj", opts)
-		vim.keymap.set("n", "k", "gk", opts)
-		vim.keymap.set("n", "^", "g^", opts)
-		vim.keymap.set("n", "$", "g$", opts)
-		vim.api.nvim_buf_set_option(0, "wrap", true)
-		vim.api.nvim_buf_set_option(0, "linebreak", true)
-    elseif config.opts.auto_gq then
-        vim.api.nvim_buf_set_option(0, "formatoptions", "t")
+		vim.keymap.set("n", "j", "gj", key_opts)
+		vim.keymap.set("n", "k", "gk", key_opts)
+		vim.keymap.set("n", "^", "g^", key_opts)
+		vim.keymap.set("n", "$", "g$", key_opts)
+		vim.api.nvim_set_option_value("wrap", true, opts)
+		vim.api.nvim_set_option_value("linebreak", true, opts)
+	elseif config.opts.auto_gq then
+		vim.api.nvim_set_option_value("formatoptions", "t", opts)
 	end
 
 	if config.opts.scroll_on_focus then
