@@ -16,6 +16,8 @@ M.setup_buffer = function(bufnr)
 		vim.keymap.set("n", "$", "g$", opts)
 		vim.api.nvim_buf_set_option(0, "wrap", true)
 		vim.api.nvim_buf_set_option(0, "linebreak", true)
+    elseif config.opts.auto_gq then
+        vim.api.nvim_buf_set_option(0, "formatoptions", "t")
 	end
 
 	if config.opts.scroll_on_focus then
