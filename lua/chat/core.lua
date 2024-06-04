@@ -10,7 +10,7 @@ M.setup_buffer = function(bufnr)
 	local opts = { buf = bufnr }
 	vim.api.nvim_set_option_value("textwidth", vim.api.nvim_win_get_width(0) - 10, opts)
 
-	if config.opts.ui.wrap then
+	if config.opts.wrap then
 		vim.keymap.set("n", "j", "gj", key_opts)
 		vim.keymap.set("n", "k", "gk", key_opts)
 		vim.keymap.set("n", "^", "g^", key_opts)
@@ -100,12 +100,12 @@ end
 
 M.open = function(popup)
 	if popup then
-		local ui = require("chat.ui")
-		if not ui.is_open() then
-			ui.open()
+		local popup_win = require("chat.popup")
+		if not popup_win.is_open() then
+			popup_win.open()
 		end
-		if not ui.is_focused() then
-			ui.focus()
+		if not popup_win.is_focused() then
+			popup_win.focus()
 		end
 	end
 

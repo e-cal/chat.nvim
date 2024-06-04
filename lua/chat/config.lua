@@ -2,10 +2,9 @@ local M = {}
 
 M.defaults = function()
 	return {
-		ui = {
+		popup = {
 			size = 40, -- percent of screen
 			direction = "right", -- left, right, top, bottom, center
-			wrap = false, -- enable line wrap (j/k are bound to gj and gk in the chat buffer so line wrap doesn't suck)
 		},
 		dir = vim.fn.stdpath("data") .. "/chat-nvim", -- dir to save/load chats
 		delimiters = { -- delimiters for sections of the chat
@@ -25,6 +24,7 @@ M.defaults = function()
 		default_system_message = "You are an expert programmer working alongside an expert colleague. Your colleague will ask you various questions about their code and ask you to assist with some coding tasks. Answer concisely and when asked for code avoid unnecessary verbose explanation.",
 		auto_scroll = true, -- scroll to bottom of chat when response is finished
 		auto_gq = true, -- automatically split lines with gq (ignores code and headings)
+		wrap = false, -- enable line wrap (j/k are bound to gj and gk in the chat buffer so line wrap doesn't suck)
         scroll_on_focus = false, -- automatically scroll to the bottom when chat is focused
 		keymap = {
 			send_message = "<CR>", -- in a chat buffer, normal mode keymap to send message

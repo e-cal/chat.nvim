@@ -38,7 +38,7 @@ M.focus = function(selection)
 	if selection ~= "" and #selection > 0 then
 		-- add triple backticks to selection with filetype (markdown code)
 		selection = "```" .. ft .. "\n" .. selection .. "```"
-    local bufnr = vim.api.nvim_get_current_buf()
+		local bufnr = vim.api.nvim_get_current_buf()
 		vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, vim.split(selection, "\n"))
 		vim.api.nvim_buf_call(bufnr, function()
 			vim.cmd("normal! G")
@@ -63,9 +63,12 @@ M.open = function(size, direction)
 			M.focus(selection)
 		end
 		return
-	end
+    elseif vim.fn.expand("%:e") == "chat" then
+        return
+    end
 
-	local opts = config.opts.ui
+
+	local opts = config.opts.popup
 
 	-- Set default size and direction if not provided
 	size = size or opts.size
@@ -131,7 +134,7 @@ M.open = function(size, direction)
 		},
 	})
 
-    local ft = vim.bo.filetype
+	local ft = vim.bo.filetype
 	M.popup:mount()
 
 	vim.api.nvim_create_autocmd("WinClosed", {

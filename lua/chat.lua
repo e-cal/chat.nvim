@@ -1,5 +1,5 @@
 local config = require("chat.config")
-local ui = require("chat.ui")
+local popup = require("chat.popup")
 local api = require("chat.api")
 local chat = require("chat.core")
 
@@ -10,25 +10,25 @@ M.setup = function(opts)
 end
 
 M.focus = function(size, direction)
-	ui.open(size, direction)
+	popup.open(size, direction)
 end
 
 M.close = function()
-	if ui.is_open() then
-		ui.close()
+	if popup.is_open() then
+		popup.close()
 	end
 end
 
 M.toggle = function(size, direction)
-	ui.toggle(size, direction)
+	popup.toggle(size, direction)
 end
 
 M.new_chat = function()
 	chat.create_new_chat()
 end
 
-M.open = function(popup)
-	chat.open(popup)
+M.open = function(as_popup)
+	chat.open(as_popup)
 end
 
 M.delete = function()
