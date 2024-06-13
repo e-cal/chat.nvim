@@ -130,11 +130,6 @@ M.open = function(popup)
 			end,
 		})
 
-		local timestamp_sorter = sorters.get_fzy_sorter()
-		timestamp_sorter.compare = function(a, b)
-			return a.value < b.value
-		end
-
 		local entry_maker = function(line)
 			local entry = require("telescope.make_entry").gen_from_vimgrep()(line)
 			if entry.value:match("1:1") then
@@ -144,10 +139,9 @@ M.open = function(popup)
 				entry.col = tonumber(col)
 				entry.text = text
 				entry.path = require("plenary.path"):new(config.opts.dir, filename):absolute()
-				-- entry.display = string.format("%s:%s:%s:%s", entry.filename, entry.lnum, entry.col, entry.text)
 				local timestamp = os.date("%Y-%m-%d %H:%M:%S", vim.loop.fs_stat(entry.path).mtime.sec)
 				entry.display = string.format("%s (%s)", entry.text:sub(3), timestamp)
-				entry.ordinal = entry.display
+                entry.ordinal = entry.display
 				return entry
 			end
 			return nil
@@ -156,12 +150,12 @@ M.open = function(popup)
 		require("telescope.builtin").grep_string({
 			prompt_title = "Load Conversation",
 			search = "^# ",
-			sorters = timestamp_sorter,
 			use_regex = true,
 			cwd = config.opts.dir,
-			sort_lastused = true,
 			entry_maker = entry_maker,
 			previewer = custom_previewer,
+			-- sorter = sorters.get_generic_fuzzy_sorter(),
+			-- file_sorter = mtime_sorter,
 			attach_mappings = function(prompt_bufnr, map)
 				local function delete_file()
 					local entry = action_state.get_selected_entry()
@@ -368,7 +362,10 @@ M.gq_chat = function(bufnr)
 		local format_sections = {} -- inclusive, 1 indexed
 
 		for i, line in ipairs(buf_lines) do
-			if line:match("```") then
+			-- skip bullets and lists
+			if line:match("^- ") or line:match("^%d+%. ") then
+				start_line = i + 1
+			elseif line:match("```") then
 				if not in_code_block then
 					format_sections[#format_sections + 1] = { start_line, i - 1 }
 				else
@@ -383,7 +380,7 @@ M.gq_chat = function(bufnr)
 			format_sections[#format_sections + 1] = { start_line, #buf_lines }
 		end
 
-		-- P(format_sections)
+		P(format_sections)
 
 		-- format in reverse order so line numbers don't change
 		for i = #format_sections, 1, -1 do
