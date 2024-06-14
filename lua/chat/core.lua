@@ -397,7 +397,7 @@ M.format_chat = function(bufnr)
 				range_start = i + 1
 
 			-- handle list items
-			elseif line:match("^%d+%. ") or line:match("^- ") then
+			elseif line:match("^%s*%d+%. ") or line:match("^%s*- ") then
 				-- print(i .. " list item")
 				format_sections[#format_sections + 1] = { range_start, i - 1 }
 				range_start = i
