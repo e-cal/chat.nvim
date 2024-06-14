@@ -22,10 +22,11 @@ local function get_headers()
 	}
 end
 
-local function prepare_data(messages, model)
+local function prepare_data(messages, model, temp)
 	local data = {
 		model = model,
 		messages = messages,
+        temperature = temp,
 	}
 	return data
 end
@@ -63,7 +64,7 @@ M.request = function(messages, model, bufnr, on_complete)
 	api.exec("curl", args, on_stdout, on_complete)
 end
 
-M.stream = function(messages, model, bufnr, on_complete)
+M.stream = function(messages, model, temp, bufnr, on_complete)
 	local raw_chunks = {}
 	local response_body = ""
 
@@ -121,7 +122,7 @@ M.stream = function(messages, model, bufnr, on_complete)
 		on_complete(err, nil)
 	end
 
-	local data = prepare_data(messages, model)
+	local data = prepare_data(messages, model, temp)
 	data["stream"] = true
 	local headers = get_headers()
 

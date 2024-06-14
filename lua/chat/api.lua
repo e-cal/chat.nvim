@@ -35,10 +35,10 @@ M.request = function(messages, model, bufnr, on_complete)
 	M.providers[provider].request(messages, model, bufnr, on_complete)
 end
 
-M.stream = function(messages, model, bufnr, on_complete)
+M.stream = function(messages, model, temp, bufnr, on_complete)
 	M.providers = M.providers or get_providers()
 	local provider = get_provider(model)
-	M.providers[provider].stream(messages, model, bufnr, on_complete)
+	M.providers[provider].stream(messages, model, temp, bufnr, on_complete)
 end
 
 M.exec = function(cmd, args, on_stdout, on_complete)

@@ -27,6 +27,16 @@ M.setup_buffer = function(bufnr)
 end
 
 M.create_new_chat = function(selection, ft)
+	-- first, check if there is a file in the dir where the first line is config.opts.default_title
+	for _, file in ipairs(vim.fn.readdir(config.opts.dir)) do
+		local path = string.format("%s/%s", config.opts.dir, file)
+		local lines = vim.fn.readfile(path)
+		if lines[1] == config.opts.default_title then
+			vim.cmd("edit " .. path)
+			return vim.api.nvim_get_current_buf()
+		end
+	end
+
 	local timestamp = os.date("%Y-%m-%d_%H-%M-%S")
 	local filename = string.format("%s/%s.chat", config.opts.dir, timestamp)
 
@@ -39,6 +49,8 @@ M.create_new_chat = function(selection, ft)
 		config.opts.delimiters.settings,
 		"",
 		config.opts.delimiters.model .. config.opts.default_model,
+		"",
+		config.opts.delimiters.temp .. config.opts.default_temp,
 		"",
 		config.opts.delimiters.system,
 		"",
@@ -111,7 +123,6 @@ M.open = function(popup)
 
 	local function call_telescope()
 		local previewers = require("telescope.previewers")
-		local sorters = require("telescope.sorters")
 		local actions = require("telescope.actions")
 		local action_state = require("telescope.actions.state")
 
@@ -139,9 +150,10 @@ M.open = function(popup)
 				entry.col = tonumber(col)
 				entry.text = text
 				entry.path = require("plenary.path"):new(config.opts.dir, filename):absolute()
-				local timestamp = os.date("%Y-%m-%d %H:%M:%S", vim.loop.fs_stat(entry.path).mtime.sec)
+				entry.time = vim.loop.fs_stat(entry.path).mtime.sec
+				local timestamp = os.date("%d-%m-%Y", entry.time)
 				entry.display = string.format("%s (%s)", entry.text:sub(3), timestamp)
-                entry.ordinal = entry.display
+				entry.ordinal = entry.display
 				return entry
 			end
 			return nil
@@ -154,8 +166,6 @@ M.open = function(popup)
 			cwd = config.opts.dir,
 			entry_maker = entry_maker,
 			previewer = custom_previewer,
-			-- sorter = sorters.get_generic_fuzzy_sorter(),
-			-- file_sorter = mtime_sorter,
 			attach_mappings = function(prompt_bufnr, map)
 				local function delete_file()
 					local entry = action_state.get_selected_entry()
@@ -209,6 +219,7 @@ local function parse_messages(bufnr)
 	local role = nil
 	local content = {}
 	local model = config.opts.default_model
+	local temp = config.opts.default_temp
 
 	local in_system = false
 	local sys_message = {}
@@ -219,6 +230,8 @@ local function parse_messages(bufnr)
 		if not in_chat then
 			if line:find("^" .. config.opts.delimiters.model) then
 				model = line:sub(config.opts.delimiters.model:len() + 1)
+			elseif line:find("^" .. config.opts.delimiters.temp) then
+				temp = tonumber(line:sub(config.opts.delimiters.temp:len() + 1))
 			else
 				in_chat = line == config.opts.delimiters.chat
 
@@ -276,7 +289,7 @@ local function parse_messages(bufnr)
 		table.insert(messages, { role = role, content = table.concat(content, "\n") })
 	end
 
-	return messages, model
+	return messages, model, temp
 end
 
 local function generate_title(_messages, bufnr)
@@ -302,7 +315,7 @@ end
 
 M.send_message = function()
 	local bufnr = vim.api.nvim_get_current_buf()
-	local messages, model = parse_messages(bufnr)
+	local messages, model, temp = parse_messages(bufnr)
 
 	if messages[#messages].role == "user" and messages[#messages].content == "" then
 		print("skipping empty user message")
@@ -340,7 +353,7 @@ M.send_message = function()
 		vim.cmd("silent w!")
 	end
 
-	api.stream(messages, model, bufnr, on_complete)
+	api.stream(messages, model, temp, bufnr, on_complete)
 end
 
 M.delete = function()
@@ -356,41 +369,95 @@ M.gq_chat = function(bufnr)
 	end
 
 	vim.api.nvim_buf_call(bufnr, function()
+		vim.cmd("normal! mg")
 		local buf_lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
-		local start_line = 2
+		local range_start = 2
 		local in_code_block = false
+		local in_list_item = false
 		local format_sections = {} -- inclusive, 1 indexed
+		local fix_backticks = {}
 
 		for i, line in ipairs(buf_lines) do
-			-- skip bullets and lists
-			if line:match("^- ") or line:match("^%d+%. ") then
-				start_line = i + 1
-			elseif line:match("```") then
+			if line:match("```") then
+				if not line:match("^%s*```") then
+					-- print(i .. " need to fix backticks")
+					fix_backticks[#fix_backticks + 1] = i
+				end
+
 				if not in_code_block then
-					format_sections[#format_sections + 1] = { start_line, i - 1 }
+					-- print(i .. " start of code block")
+					format_sections[#format_sections + 1] = { range_start, i - 1 }
 				else
-					start_line = i + 1
+					-- print(i .. " end of code block")
+					range_start = i + 1
 				end
 				in_code_block = not in_code_block
+
+			-- always skip lines in a code block
+			elseif in_code_block then
+				range_start = i + 1
+
+			-- handle list items
+			elseif line:match("^%d+%. ") or line:match("^- ") then
+				-- print(i .. " list item")
+				format_sections[#format_sections + 1] = { range_start, i - 1 }
+				range_start = i
+				in_list_item = true
+			elseif in_list_item and line == "" then
+				-- print(i .. " end of list item")
+				format_sections[#format_sections + 1] = { range_start, i - 1 }
+				range_start = i
+				in_list_item = false
 			end
 		end
 
-		-- catch text after the last code block
-		if not in_code_block then
-			format_sections[#format_sections + 1] = { start_line, #buf_lines }
+		if range_start <= #buf_lines then
+			format_sections[#format_sections + 1] = { range_start, #buf_lines }
+			-- else
+			--     print("can't add end")
+			--     print(range_start)
+			--     print(#buf_lines)
 		end
-
 		P(format_sections)
+
+		-- delete the backticks from that line, and insert them in a line below
+		for _, line in ipairs(fix_backticks) do
+			local line_content = buf_lines[line]
+			local new_content = line_content:gsub("```", "")
+			vim.api.nvim_buf_set_lines(bufnr, line - 1, line, false, { new_content })
+			-- insert a new line below, with backticks. do not overwrite existing content make a new line
+			vim.cmd("normal! " .. line .. "Go```")
+
+			-- fix all the ranges after this line to account for the new line
+			for _, section in ipairs(format_sections) do
+				if section[1] >= line then
+					section[1] = section[1] + 1
+					section[2] = section[2] + 1
+				end
+			end
+		end
 
 		-- format in reverse order so line numbers don't change
 		for i = #format_sections, 1, -1 do
+			if format_sections[i][1] > format_sections[i][2] then
+				-- print("skipping invalid range " .. format_sections[i][1] .. "-" .. format_sections[i][2])
+				goto continue
+			-- skip if its just 1 line and that line is blank
+			elseif format_sections[i][1] == format_sections[i][2] and buf_lines[format_sections[i][1]] == "" then
+				goto continue
+			end
+
 			local section = format_sections[i]
 			local s_line, e_line = section[1], section[2]
 			vim.cmd("normal " .. s_line .. "GV" .. e_line .. "Ggq")
+			::continue::
 		end
 
+		require("conform").format()
+
 		vim.api.nvim_buf_call(bufnr, function()
-			vim.cmd("normal! G")
+			-- vim.cmd("normal! G")
+			vim.cmd("normal! `g")
 		end)
 	end)
 end
