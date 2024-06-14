@@ -36,9 +36,9 @@ Using lazy.nvim
   - _Chat is open, not focused_: focuses the chat window
   - _Chat is open, focused_: focuses your previous editor
   - binding `ChatFocus` is the recommended way to navigate to and from the chat window, since
-  `<C-w>h/j/k/l` does not work with popups
+    `<C-w>h/j/k/l` does not work with popups
     - alternatively, `<C-w>w` does work and can also be used
-- `ChatToggle` to toggle ui 
+- `ChatToggle` to toggle ui
 - `ChatClose` to close ui
 - `ChatNew` to start a new chat
 - `ChatOpen` to open an existing chat
@@ -50,41 +50,46 @@ Using lazy.nvim
 ## Configuration
 
 Defaults:
+
 ```lua
 {
-  ui = {
-    size = 40, -- percent of screen
-    direction = "right", -- left, right, top, bottom, center
-    wrap = false, -- enable line wrap (j/k are bound to gj and gk in the chat buffer so line wrap doesn't suck)
-  },
   dir = vim.fn.stdpath("data") .. "/chat-nvim", -- dir to save/load chats
+  openai_api_key = function()
+    return os.getenv("OPENAI_API_KEY") or vim.fn.input("OpenAI API Key: ")
+  end,
+  default = { -- default values for chat parameters (overwritten if changed inline in chat)
+    title = "# New Chat",
+    model = "gpt-4o", -- currently only openai models are supported
+    temp = 0, -- model temperature
+    system_message = "You are an expert programmer working alongside an expert colleague. Your colleague will ask you various questions about their code and ask you to assist with some coding tasks. Answer concisely and when asked for code avoid unnecessary verbose explanation.",
+  },
+  title_model = "gpt-3.5-turbo", -- model used to generate chat titles
+  auto_scroll = true, -- scroll to bottom of chat when response is finished
+  auto_format = true, -- automatically format the chat on save
+  wrap = false, -- enable line wrap (j/k are bound to gj and gk in the chat buffer so line wrap doesn't suck)
+  scroll_on_focus = false, -- automatically scroll to the bottom when chat is focused
+  keymap = {
+    send_message = "<CR>", -- in a chat buffer, normal mode keymap to send message
+    delete_chat = "<C-d>", -- in telescope chat menu, keymap to delete a chat
+  },
   delimiters = { -- delimiters for sections of the chat
     settings = "## Settings",
     model = "> Model: ",
+    temp = "> Temperature: ",
     system = "> System Message",
     chat = "## Chat",
     user = "> User",
     assistant = "> Assistant",
   },
-  openai_api_key = function()
-    return os.getenv("OPENAI_API_KEY") or vim.fn.input("OpenAI API Key: ")
-  end,
-  default_title = "# New Chat",
-  default_model = "gpt-4o", -- currently only supports openai gpt models
-  title_model = "gpt-3.5-turbo", -- model used to generate chat titles
-  default_system_message = "You are an expert programmer working alongside an expert colleague. Your colleague will ask you various questions about their code and ask you to assist with some coding tasks. Answer concisely and when asked for code avoid unnecessary verbose explanation.",
-  auto_scroll = true, -- scroll to bottom of chat when response is finished
-  auto_gq = true, -- automatically split lines with gq (ignores code and headings)
+  popup = {
+    size = 40, -- percent of screen
+    direction = "right", -- left, right, top, bottom, center
+  },
 }
 ```
 
-
 ## TODO
 
-- [-] Add model params to chat files
-  - [x] set model inline
-  - [ ] set other arbitrary params (temperature, etc)
-- [x] Add auto paste selection when chat is focused from visual mode
 - [ ] Add providers
   - [ ] anthropic
   - [ ] groq

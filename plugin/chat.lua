@@ -119,6 +119,6 @@ autocmd("BufWritePre", {
 	group = chat_group,
 	pattern = "*.chat",
 	callback = function()
-		require("chat.core").gq_chat(vim.api.nvim_get_current_buf())
+		require("chat.core").format_chat(vim.api.nvim_get_current_buf())
 	end,
 })

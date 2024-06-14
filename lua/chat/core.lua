@@ -17,7 +17,7 @@ M.setup_buffer = function(bufnr)
 		vim.keymap.set("n", "$", "g$", key_opts)
 		vim.api.nvim_set_option_value("wrap", true, opts)
 		vim.api.nvim_set_option_value("linebreak", true, opts)
-	elseif config.opts.auto_gq then
+	elseif config.opts.auto_format then
 		vim.api.nvim_set_option_value("formatoptions", "t", opts)
 	end
 
@@ -27,11 +27,10 @@ M.setup_buffer = function(bufnr)
 end
 
 M.create_new_chat = function(selection, ft)
-	-- first, check if there is a file in the dir where the first line is config.opts.default_title
 	for _, file in ipairs(vim.fn.readdir(config.opts.dir)) do
 		local path = string.format("%s/%s", config.opts.dir, file)
 		local lines = vim.fn.readfile(path)
-		if lines[1] == config.opts.default_title then
+		if lines[1] == config.opts.default.title then
 			vim.cmd("edit " .. path)
 			return vim.api.nvim_get_current_buf()
 		end
@@ -44,17 +43,17 @@ M.create_new_chat = function(selection, ft)
 	local bufnr = vim.api.nvim_get_current_buf()
 
 	local lines = {
-		config.opts.default_title,
+		config.opts.default.title,
 		"",
 		config.opts.delimiters.settings,
 		"",
-		config.opts.delimiters.model .. config.opts.default_model,
+		config.opts.delimiters.model .. config.opts.default.model,
 		"",
-		config.opts.delimiters.temp .. config.opts.default_temp,
+		config.opts.delimiters.temp .. config.opts.default.temp,
 		"",
 		config.opts.delimiters.system,
 		"",
-		config.opts.default_system_message,
+		config.opts.default.system_message,
 		"",
 		config.opts.delimiters.chat,
 		"",
@@ -218,8 +217,8 @@ local function parse_messages(bufnr)
 	local messages = {}
 	local role = nil
 	local content = {}
-	local model = config.opts.default_model
-	local temp = config.opts.default_temp
+	local model = config.opts.default.model
+	local temp = config.opts.default.temp
 
 	local in_system = false
 	local sys_message = {}
@@ -331,7 +330,7 @@ M.send_message = function()
 
 	vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, { "", "", config.opts.delimiters.assistant, "", "" })
 
-	if buf_lines[1] == config.opts.default_title then
+	if buf_lines[1] == config.opts.default.title then
 		print("Generating title...")
 		generate_title(messages, bufnr)
 	end
@@ -343,7 +342,7 @@ M.send_message = function()
 
 		vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, { "", "", config.opts.delimiters.user, "", "" })
 
-		M.gq_chat(bufnr)
+		M.format_chat(bufnr)
 
 		if config.opts.auto_scroll then
 			vim.api.nvim_buf_call(bufnr, function()
@@ -363,8 +362,8 @@ M.delete = function()
 	M.load_last_chat()
 end
 
-M.gq_chat = function(bufnr)
-	if not config.opts.auto_gq then
+M.format_chat = function(bufnr)
+	if not config.opts.auto_format then
 		return
 	end
 
