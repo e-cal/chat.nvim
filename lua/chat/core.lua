@@ -417,7 +417,7 @@ M.format_chat = function(bufnr)
 			--     print(range_start)
 			--     print(#buf_lines)
 		end
-		P(format_sections)
+		-- P(format_sections)
 
 		-- delete the backticks from that line, and insert them in a line below
 		for _, line in ipairs(fix_backticks) do
