@@ -2,15 +2,6 @@ local config = require("chat.config")
 
 local M = {}
 
--- Request utils
-
-M.ensureUrlProtocol = function(str)
-	if M.startsWith(str, "https://") or M.startsWith(str, "http://") then
-		return str
-	end
-	return "https://" .. str
-end
-
 local function exec(cmd, args, on_stdout, on_complete)
 	local stdout = vim.loop.new_pipe()
 	local function on_stdout_read(_, chunk)

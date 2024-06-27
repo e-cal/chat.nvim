@@ -5,7 +5,20 @@ local M = {}
 
 M.setup_buffer = function(bufnr)
 	local key_opts = { noremap = true, silent = true, nowait = true, buffer = bufnr }
+
+	-- keymaps
 	vim.keymap.set("n", config.opts.keymap.send_message, M.send_message, key_opts)
+	vim.keymap.set("n", config.opts.keymap.yank_code, M.yank_code, key_opts)
+
+	-- global
+	if config.opts.keymap.paste_code ~= "" then
+		vim.keymap.set(
+			"n",
+			config.opts.keymap.paste_code,
+			'"' .. config.opts.code_register .. "p",
+			{ noremap = true, nowait = true }
+		)
+	end
 
 	local opts = { buf = bufnr }
 	vim.api.nvim_set_option_value("textwidth", vim.api.nvim_win_get_width(0) - 10, opts)
@@ -296,14 +309,14 @@ local function generate_title(_messages, bufnr)
 
 	local on_complete = function(err, res)
 		if not res then
-            print("No response")
+			print("No response")
 			return
 		end
 		if err then
 			vim.api.nvim_err_writeln("Error generating conversation title: " .. err)
 		else
 			local title = res.choices[1].message.content
-            print("Generated title: " .. title)
+			print("Generated title: " .. title)
 			vim.api.nvim_buf_set_lines(bufnr, 0, 1, false, { "# " .. title })
 		end
 	end
@@ -447,6 +460,29 @@ M.format_chat = function(bufnr)
 			vim.cmd("normal! `g")
 		end)
 	end)
+end
+
+M.yank_code = function()
+	local node = vim.treesitter.get_node()
+	if not node then
+		return
+	end
+
+	while node:type() ~= "fenced_code_block" and node:parent() do
+		node = node:parent()
+	end
+
+	if node:type() == "fenced_code_block" then
+		for child in node:iter_children() do
+			if child:type() == "code_fence_content" then
+				local start_row, start_col, end_row, end_col = child:range()
+				local content = vim.api.nvim_buf_get_text(0, start_row, start_col, end_row, end_col, {})
+				vim.fn.setreg(config.opts.code_register, table.concat(content, "\n"))
+				print("yanked code")
+				return
+			end
+		end
+	end
 end
 
 return M
