@@ -3,12 +3,20 @@ local M = {}
 M.defaults = function()
 	return {
 		dir = vim.fn.stdpath("data") .. "/chat-nvim", -- dir to save/load chats
-		openai_api_key = function()
-			return os.getenv("OPENAI_API_KEY") or vim.fn.input("OpenAI API Key: ")
-		end,
+		api_keys = {
+			openai = function()
+				return os.getenv("OPENAI_API_KEY") or vim.fn.input("OpenAI API Key: ")
+			end,
+			anthropic = function()
+				return os.getenv("ANTHROPIC_API_KEY") or vim.fn.input("Anthropic API Key: ")
+			end,
+			groq = function()
+				return os.getenv("GROQ_API_KEY") or vim.fn.input("Groq API Key: ")
+			end,
+		},
 		default = { -- default values for chat parameters (overwritten if changed inline in chat)
 			title = "# New Chat",
-			model = "gpt-4o", -- currently only openai models are supported
+			model = "gpt-4o", -- model names will auto add the suffix if needed
 			temp = 0, -- model temperature
 			system_message = "You are an expert programmer working alongside an expert colleague. Your colleague will ask you various questions about their code and ask you to assist with some coding tasks. Answer concisely and when asked for code avoid unnecessary verbose explanation.",
 		},

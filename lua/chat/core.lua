@@ -65,7 +65,6 @@ M.create_new_chat = function(selection, ft)
 	vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
 
 	if selection and #selection > 0 then
-		-- add triple backticks to selection with filetype (markdown code)
 		selection = "```" .. ft .. "\n" .. selection .. "```"
 		vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, vim.split(selection, "\n"))
 		vim.api.nvim_buf_call(bufnr, function()
@@ -98,7 +97,6 @@ M.load_last_chat = function(selection, ft)
 	local bufnr = vim.api.nvim_get_current_buf()
 
 	if selection and #selection > 0 then
-		-- add triple backticks to selection with filetype (markdown code)
 		selection = "```" .. ft .. "\n" .. selection .. "```"
 		vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, vim.split(selection, "\n"))
 		vim.api.nvim_buf_call(bufnr, function()
@@ -204,11 +202,10 @@ M.popup_open = function(selection, ft)
 
 	new = new or selection ~= ""
 
-	local bufnr
 	if new then
-		bufnr = M.create_new_chat(selection, ft)
+		M.create_new_chat(selection, ft)
 	else
-		bufnr = M.load_last_chat(selection, ft)
+		M.load_last_chat(selection, ft)
 	end
 end
 
@@ -281,7 +278,7 @@ local function parse_messages(bufnr)
 		end
 	end
 
-	if role then -- messages are appended on role switch, so last gets left out
+	if role then -- messages are appended on role switch, so last gets left out (catch it here)
 		while #content > 0 and content[#content] == "" do
 			table.remove(content, #content)
 		end
@@ -296,20 +293,22 @@ local function generate_title(_messages, bufnr)
 		_messages[2],
 		{ role = "system", content = "Write a short (1-5 words) title for this conversation:" },
 	}
+
 	local on_complete = function(err, res)
-		-- callback function for end of response
 		if not res then
+            print("No response")
 			return
 		end
 		if err then
 			vim.api.nvim_err_writeln("Error generating conversation title: " .. err)
 		else
 			local title = res.choices[1].message.content
+            print("Generated title: " .. title)
 			vim.api.nvim_buf_set_lines(bufnr, 0, 1, false, { "# " .. title })
 		end
 	end
 
-	api.request(messages, config.opts.title_model, bufnr, on_complete)
+	api.request(messages, config.opts.title_model, 0, bufnr, on_complete)
 end
 
 M.send_message = function()
@@ -317,7 +316,7 @@ M.send_message = function()
 	local messages, model, temp = parse_messages(bufnr)
 
 	if messages[#messages].role == "user" and messages[#messages].content == "" then
-		print("skipping empty user message")
+		print("Skipping empty user message")
 		return
 	end
 
@@ -352,7 +351,7 @@ M.send_message = function()
 		vim.cmd("silent w!")
 	end
 
-	api.stream(messages, model, temp, bufnr, on_complete)
+	api.request(messages, model, temp, bufnr, on_complete, true)
 end
 
 M.delete = function()
@@ -379,15 +378,12 @@ M.format_chat = function(bufnr)
 		for i, line in ipairs(buf_lines) do
 			if line:match("```") then
 				if not line:match("^%s*```") then
-					-- print(i .. " need to fix backticks")
 					fix_backticks[#fix_backticks + 1] = i
 				end
 
 				if not in_code_block then
-					-- print(i .. " start of code block")
 					format_sections[#format_sections + 1] = { range_start, i - 1 }
 				else
-					-- print(i .. " end of code block")
 					range_start = i + 1
 				end
 				in_code_block = not in_code_block
@@ -398,12 +394,10 @@ M.format_chat = function(bufnr)
 
 			-- handle list items
 			elseif line:match("^%s*%d+%. ") or line:match("^%s*- ") then
-				-- print(i .. " list item")
 				format_sections[#format_sections + 1] = { range_start, i - 1 }
 				range_start = i
 				in_list_item = true
 			elseif in_list_item and line == "" then
-				-- print(i .. " end of list item")
 				format_sections[#format_sections + 1] = { range_start, i - 1 }
 				range_start = i
 				in_list_item = false
@@ -412,12 +406,7 @@ M.format_chat = function(bufnr)
 
 		if range_start <= #buf_lines then
 			format_sections[#format_sections + 1] = { range_start, #buf_lines }
-			-- else
-			--     print("can't add end")
-			--     print(range_start)
-			--     print(#buf_lines)
 		end
-		-- P(format_sections)
 
 		-- delete the backticks from that line, and insert them in a line below
 		for _, line in ipairs(fix_backticks) do
@@ -439,7 +428,6 @@ M.format_chat = function(bufnr)
 		-- format in reverse order so line numbers don't change
 		for i = #format_sections, 1, -1 do
 			if format_sections[i][1] > format_sections[i][2] then
-				-- print("skipping invalid range " .. format_sections[i][1] .. "-" .. format_sections[i][2])
 				goto continue
 			-- skip if its just 1 line and that line is blank
 			elseif format_sections[i][1] == format_sections[i][2] and buf_lines[format_sections[i][1]] == "" then
