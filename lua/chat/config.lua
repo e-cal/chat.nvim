@@ -10,6 +10,9 @@ M.defaults = function()
 			anthropic = function()
 				return os.getenv("ANTHROPIC_API_KEY") or vim.fn.input("Anthropic API Key: ")
 			end,
+			deepseek = function()
+				return os.getenv("DEEPSEEK_API_KEY") or vim.fn.input("DeepSeek API Key: ")
+			end,
 			groq = function()
 				return os.getenv("GROQ_API_KEY") or vim.fn.input("Groq API Key: ")
 			end,
@@ -46,6 +49,11 @@ M.defaults = function()
 		popup = {
 			size = 40, -- percent of screen
 			direction = "right", -- left, right, top, bottom, center
+		},
+		inline = {
+			model = "claude-3.5-sonnet", -- model names will auto add the suffix if needed
+			temp = 0, -- model temperature
+			system_message = "You are an expert programmer working alongside an expert colleague. You will be given code snippets. If there are comments towards the end with instructions or describing non-existent code, you should write the code. Only do exactly as instructed, do not add code that was not asked for. Only respond with code, make all comments and explanation as code comments.",
 		},
 	}
 end

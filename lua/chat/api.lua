@@ -54,6 +54,8 @@ local function get_provider(model)
 		return "openai"
 	elseif model:find("claude") then
 		return "anthropic"
+	elseif model:find("deepseek") then
+		return "deepseek"
 	else
 		return "groq"
 	end
@@ -78,6 +80,8 @@ local function get_provider_url(provider)
 		return "https://api.openai.com/v1/chat/completions"
 	elseif provider == "anthropic" then
 		return "https://api.anthropic.com/v1/messages"
+    elseif provider == "deepseek" then
+        return "https://api.deepseek.com/chat/completions"
 	elseif provider == "groq" then
 		return "https://api.groq.com/openai/v1/chat/completions"
 	end
@@ -132,6 +136,7 @@ local function get_curl_args(messages, model, temp, stream)
 		local model_suffix = {
 			["llama3-8b"] = "8192",
 			["llama3-70b"] = "8192",
+			["mixtral"] = "8x7b-32768",
 			["mixtral-8x7b"] = "32768",
 			["gemma-7b"] = "it",
 		}
