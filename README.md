@@ -1,13 +1,17 @@
-# chat.nvim - Simple AI Chat
+# chat.nvim
 
-Chat with an LLM in neovim. No half baked bells and whistles, just chat with
-the service of your choice and easy copy-pasting back and forth.
+Chat with an LLM in a markdown file and complete code inline. For people who
+prefer the API playground to chatbot uis.
 
-There's a ton of AI plugins these days, but I wasn't really satisfied with any of
-them. So, I made another one! This probably has the least features out of any of
-them, its just a simple chat window where chats are plain markdown files.
+No fancy limiting chat ui, just parses the file as a chat using the delimiters
+and streams the response into the file. Works like an API playground.
 
-My goal is more or less to combine the simplicity of [gp.nvim](https://github.com/Robitx/gp.nvim) with the flexibility of [ogpt.nvim](https://github.com/huynle/ogpt.nvim).
+- Change model parameters in-line
+- Revise chat history as needed (its just a markdown file)
+- Swap the model mid conversation
+- Open chat as a full buffer or in a popup
+  - or one-shot send visual selection and stream response directly into the current buffer
+- Configurable auto formatting, code yank/paste keybinds, and other quality of life features
 
 ![screenshot](https://github.com/e-cal/chat.nvim/assets/47398876/6dcadab5-32e9-4dbd-9706-d62f6fa043b4)
 
