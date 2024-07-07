@@ -1,6 +1,5 @@
 local config = require("chat.config")
 local popup = require("chat.popup")
-local api = require("chat.api")
 local chat = require("chat.core")
 
 local M = {}
@@ -33,6 +32,10 @@ end
 
 M.delete = function()
 	chat.delete()
+end
+
+M.inline = function(context)
+  chat.inline(context)
 end
 
 return M

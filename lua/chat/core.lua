@@ -18,6 +18,12 @@ M.setup_buffer = function(bufnr)
 			'"' .. config.opts.code_register .. "p",
 			{ noremap = true, nowait = true }
 		)
+		vim.keymap.set(
+			"v",
+			config.opts.keymap.paste_code,
+			'"' .. config.opts.code_register .. "p",
+			{ noremap = true, nowait = true }
+		)
 	end
 
 	local opts = { buf = bufnr }
@@ -483,6 +489,48 @@ M.yank_code = function()
 			end
 		end
 	end
+end
+
+M.inline = function(context)
+    local bufnr = vim.api.nvim_get_current_buf()
+    local cursor = vim.api.nvim_win_get_cursor(0)
+    local row, col = cursor[1] - 1, cursor[2]
+
+    local messages = {
+        { role = "system", content = config.opts.inline.system_message },
+        { role = "user", content = context }
+    }
+
+    local on_chunk = function(err, chunk)
+        if err then
+            vim.api.nvim_err_writeln("Error streaming response: " .. err)
+            return
+        end
+        if chunk then
+            local lines = vim.split(chunk, "\n")
+            for i, line in ipairs(lines) do
+                if i == 1 then
+                    local current_line = vim.api.nvim_buf_get_lines(bufnr, row, row + 1, false)[1]
+                    local new_line = current_line:sub(1, col) .. line .. current_line:sub(col + 1)
+                    vim.api.nvim_buf_set_lines(bufnr, row, row + 1, false, {new_line})
+                    col = col + #line
+                else
+                    row = row + 1
+                    vim.api.nvim_buf_set_lines(bufnr, row, row, false, {line})
+                    col = #line
+                end
+            end
+            vim.api.nvim_win_set_cursor(0, {row + 1, col})
+        end
+    end
+
+    local on_complete = function(err, _)
+        if err then
+            vim.api.nvim_err_writeln("Error completing inline response: " .. err)
+        end
+    end
+
+    api.request(messages, config.opts.inline.model, config.opts.inline.temp, bufnr, on_complete, true, on_chunk)
 end
 
 return M

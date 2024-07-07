@@ -3,12 +3,7 @@ local config = require("chat.config")
 -------------------------------------------------------------------------------
 --                               User Commands                               --
 -------------------------------------------------------------------------------
-
 local cmd = vim.api.nvim_create_user_command
-
-local get_direction_options = function()
-	return { "top", "bottom", "left", "right", "center" }
-end
 
 cmd("ChatFocus", function(opts)
 	-- opts.args is all the arguments together in a string
@@ -29,7 +24,7 @@ cmd("ChatFocus", function(opts)
 end, {
 	nargs = "?",
 	complete = function()
-		return get_direction_options()
+		return { "top", "bottom", "left", "right", "center" }
 	end,
 })
 
@@ -52,7 +47,7 @@ cmd("ChatToggle", function(opts)
 end, {
 	nargs = "?",
 	complete = function()
-		return get_direction_options()
+		return { "top", "bottom", "left", "right", "center" }
 	end,
 })
 
@@ -72,7 +67,7 @@ cmd("ChatOpen", function(opts)
 	require("chat").open(popup)
 end, {
 	nargs = "?",
-	complete = function(_, _, _)
+	complete = function()
 		return { "popup" }
 	end,
 })
@@ -85,6 +80,40 @@ cmd("ChatResize", function(opts)
 	local size = tonumber(opts.args)
 	require("chat").resize(size)
 end, { nargs = 1 })
+
+cmd("ChatInline", function(opts)
+	local replace = opts.args == "replace"
+	local context
+	if vim.fn.mode():match("[vV]") then
+		vim.cmd('silent normal! "vy')
+		context = vim.fn.getreg("v")
+
+		-- only allow replacing with a visual selection
+		if replace then
+			vim.cmd("normal! gv")
+			vim.cmd('normal! "_d')
+		else
+			vim.cmd("normal! `>")
+			vim.cmd("normal! o")
+		end
+	else
+		-- send the whole file up to the cursor line
+		context = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line("."), true)
+		vim.cmd("normal! o")
+	end
+
+	if not replace then
+		-- prepend "continue from where this leaves off, do not repeat the code" to context
+		context = vim.fn.join({ "continue from where this leaves off, do not repeat the code", "" }, context)
+	end
+
+	require("chat").inline(context)
+end, {
+	nargs = "?",
+	complete = function()
+		return { "replace" }
+	end,
+})
 
 -------------------------------------------------------------------------------
 --                               Auto Commands                               --
