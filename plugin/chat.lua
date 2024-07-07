@@ -99,12 +99,12 @@ cmd("ChatInline", function(opts)
 	else
 		-- send the whole file up to the cursor line
 		context = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line("."), true)
+        context = table.concat(context, "\n")
 		vim.cmd("normal! o")
 	end
 
 	if not replace then
-		-- prepend "continue from where this leaves off, do not repeat the code" to context
-		context = vim.fn.join({ "continue from where this leaves off, do not repeat the code", "" }, context)
+        context = "```" .. vim.bo.filetype .. "\n" .. context .. "\n```"
 	end
 
 	require("chat").inline(context)

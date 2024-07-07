@@ -507,20 +507,40 @@ M.inline = function(context)
             return
         end
         if chunk then
-            local lines = vim.split(chunk, "\n")
-            for i, line in ipairs(lines) do
-                if i == 1 then
-                    local current_line = vim.api.nvim_buf_get_lines(bufnr, row, row + 1, false)[1]
-                    local new_line = current_line:sub(1, col) .. line .. current_line:sub(col + 1)
-                    vim.api.nvim_buf_set_lines(bufnr, row, row + 1, false, {new_line})
-                    col = col + #line
-                else
-                    row = row + 1
-                    vim.api.nvim_buf_set_lines(bufnr, row, row, false, {line})
-                    col = #line
+            for chunk_json in chunk:gmatch("[^\n]+") do
+                local raw_json = string.gsub(chunk_json, "^data: ", "")
+                local ok, chunk_data = pcall(vim.json.decode, raw_json)
+                if not ok then
+                    goto continue
                 end
+
+                local chunk_content
+                if chunk_data.choices ~= nil then -- openai/groq api
+                    chunk_content = chunk_data.choices[1].delta.content
+                elseif chunk_data.type == "content_block_delta" then -- anthropic api
+                    chunk_content = chunk_data.delta.text
+                end
+                if chunk_content == nil then
+                    goto continue
+                end
+
+                local lines = vim.split(chunk_content, "\n")
+                for i, line in ipairs(lines) do
+                    if i == 1 then
+                        local current_line = vim.api.nvim_buf_get_lines(bufnr, row, row + 1, false)[1]
+                        local new_line = current_line:sub(1, col) .. line .. current_line:sub(col + 1)
+                        vim.api.nvim_buf_set_lines(bufnr, row, row + 1, false, {new_line})
+                        col = col + #line
+                    else
+                        row = row + 1
+                        vim.api.nvim_buf_set_lines(bufnr, row, row, false, {line})
+                        col = #line
+                    end
+                end
+                vim.api.nvim_win_set_cursor(0, {row + 1, col})
+
+                ::continue::
             end
-            vim.api.nvim_win_set_cursor(0, {row + 1, col})
         end
     end
 

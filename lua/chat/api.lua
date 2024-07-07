@@ -209,36 +209,40 @@ local function handle_complete(err, raw_chunks, on_complete)
 	on_complete(err, nil)
 end
 
-M.request = function(messages, model, temp, bufnr, on_complete, stream_response)
-	local args = get_curl_args(messages, model, temp, stream_response or false)
+M.request = function(messages, model, temp, bufnr, on_complete, stream_response, on_chunk)
+    local args = get_curl_args(messages, model, temp, stream_response or false)
 
-	if stream_response then
-		local raw_chunks = {}
-		local on_stdout_chunk = function(chunk)
-			handle_stream_chunk(chunk, bufnr, raw_chunks)
-		end
+    if stream_response then
+        local raw_chunks = {}
+        local on_stdout_chunk = function(chunk)
+            if on_chunk then
+                on_chunk(nil, chunk)
+            else
+                handle_stream_chunk(chunk, bufnr, raw_chunks)
+            end
+        end
 
-		local _on_complete = function(err, _)
-			handle_complete(err, raw_chunks, on_complete)
-		end
+        local _on_complete = function(err, _)
+            handle_complete(err, raw_chunks, on_complete)
+        end
 
-		exec("curl", args, on_stdout_chunk, _on_complete)
-	else
-		local on_stdout = function(response_body)
-			local ok, response = pcall(vim.json.decode, response_body)
-			if not ok then
-				on_complete("Failed to parse response JSON: " .. response_body)
-				return
-			end
-			if response.error then
-				on_complete("Request error: " .. response.error.message)
-				return
-			end
-			on_complete(nil, response)
-		end
+        exec("curl", args, on_stdout_chunk, _on_complete)
+    else
+        local on_stdout = function(response_body)
+            local ok, response = pcall(vim.json.decode, response_body)
+            if not ok then
+                on_complete("Failed to parse response JSON: " .. response_body)
+                return
+            end
+            if response.error then
+                on_complete("Request error: " .. response.error.message)
+                return
+            end
+            on_complete(nil, response)
+        end
 
-		exec("curl", args, on_stdout, on_complete)
-	end
+        exec("curl", args, on_stdout, on_complete)
+    end
 end
 
 return M

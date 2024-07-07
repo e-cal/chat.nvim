@@ -21,9 +21,13 @@ M.defaults = function()
 			title = "# New Chat",
 			model = "claude-3.5-sonnet", -- model names will auto add the suffix if needed
 			temp = 0, -- model temperature
-			system_message = "You are an expert programmer working alongside an expert colleague. Your colleague will ask you various questions about their code and ask you to assist with some coding tasks. Answer concisely and when asked for code avoid unnecessary verbose explanation.",
+			system_message = [[
+                You are an expert programmer working alongside an expert colleague. 
+                Your colleague will ask you various questions about their code and ask you to assist with some coding tasks. 
+                Answer concisely and when asked for code avoid unnecessary verbose explanation.
+            ]],
 		},
-		title_model = "gpt-3.5-turbo", -- model used to generate chat titles
+		title_model = "llama3-8b-8192", -- model used to generate chat titles
 		auto_scroll = true, -- scroll to bottom of chat when response is finished
 		auto_format = true, -- automatically format the chat on save
 		wrap = false, -- enable line wrap (j/k are bound to gj and gk in the chat buffer so line wrap doesn't suck)
@@ -53,7 +57,16 @@ M.defaults = function()
 		inline = {
 			model = "claude-3.5-sonnet", -- model names will auto add the suffix if needed
 			temp = 0, -- model temperature
-			system_message = "You are an expert programmer working alongside an expert colleague. You will be given code snippets. If there are comments towards the end with instructions or describing non-existent code, you should write the code. Only do exactly as instructed, do not add code that was not asked for. Only respond with code, make all comments and explanation as code comments.",
+			system_message = [[
+                You are an expert programmer working alongside an expert colleague. 
+                You will be given code snippets. 
+                Treat comments that don't have accompanying code as instructions on what needs to be done. 
+                Only respond with code, make all comments and explanation as code comments.
+                Do not respond or acknowledge the request in any way, just start coding.
+                Continue where the code leaves off, do not repeat existing code unless it needs to be changed.
+                There is no need to fence the code with triple backticks ```, just start writing code.
+                Only do exactly as instructed, do not add code that was not explicitly asked for or described. Do not add more functionality than is asked for.
+            ]],
 		},
 	}
 end
