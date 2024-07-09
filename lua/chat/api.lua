@@ -2,101 +2,52 @@ local config = require("chat.config")
 
 local M = {}
 
--- local function exec(cmd, args, on_stdout, on_complete)
--- 	local stdout = vim.loop.new_pipe()
--- 	local function on_stdout_read(_, chunk)
--- 		if chunk then
--- 			vim.schedule(function()
--- 				local _stop = on_stdout(chunk)
--- 				if _stop then
--- 					handle:kill(15)
--- 				end
--- 			end)
--- 		end
--- 	end
---
--- 	local stderr = vim.loop.new_pipe()
--- 	local stderr_chunks = {}
--- 	local function on_stderr_read(_, chunk)
--- 		if chunk then
--- 			table.insert(stderr_chunks, chunk)
--- 		end
--- 	end
---
--- 	local handle, err
---
--- 	handle, err = vim.loop.spawn(cmd, {
--- 		args = args,
--- 		stdio = { nil, stdout, stderr },
--- 	}, function(code)
--- 		stdout:close()
--- 		stderr:close()
--- 		handle:close()
---
--- 		vim.schedule(function()
--- 			if code ~= 0 then
--- 				on_complete(vim.trim(table.concat(stderr_chunks, "")))
--- 			else
--- 				on_complete()
--- 			end
--- 		end)
--- 	end)
---
--- 	if not handle then
--- 		on_complete(cmd .. " could not be started: " .. err)
--- 	else
--- 		stdout:read_start(on_stdout_read)
--- 		stderr:read_start(on_stderr_read)
--- 	end
--- end
-
-
 local function exec(cmd, args, on_stdout, on_complete)
-  local stdout = vim.loop.new_pipe()
-  local stderr = vim.loop.new_pipe()
-  local stderr_chunks = {}
-  local handle, err
+	local stdout = vim.loop.new_pipe()
+	local stderr = vim.loop.new_pipe()
+	local stderr_chunks = {}
+	local handle, err
 
-  local function on_stdout_read(_, chunk)
-    if chunk then
-      vim.schedule(function()
-        local should_stop = on_stdout(chunk)
-        if should_stop and handle then
-          handle:kill(15)  -- Send SIGTERM to stop the process
-        end
-      end)
-    end
-  end
+	local function on_stdout_read(_, chunk)
+		if chunk then
+			vim.schedule(function()
+				local should_stop = on_stdout(chunk)
+				if should_stop and handle then
+					handle:kill(15)
+				end
+			end)
+		end
+	end
 
-  local function on_stderr_read(_, chunk)
-    if chunk then
-      table.insert(stderr_chunks, chunk)
-    end
-  end
+	local function on_stderr_read(_, chunk)
+		if chunk then
+			table.insert(stderr_chunks, chunk)
+		end
+	end
 
-  handle, err = vim.loop.spawn(cmd, {
-    args = args,
-    stdio = { nil, stdout, stderr },
-  }, function(code)
-    stdout:close()
-    stderr:close()
-    handle:close()
+	handle, err = vim.loop.spawn(cmd, {
+		args = args,
+		stdio = { nil, stdout, stderr },
+	}, function(code)
+		stdout:close()
+		stderr:close()
+		handle:close()
 
-    vim.schedule(function()
-      if code ~= 0 then
-        on_complete(vim.trim(table.concat(stderr_chunks, "")))
-      else
-        on_complete()
-      end
-    end)
-  end)
+		vim.schedule(function()
+			if code ~= 0 then
+				on_complete(vim.trim(table.concat(stderr_chunks, "")))
+			else
+				on_complete()
+			end
+		end)
+	end)
 
-  if not handle then
-    on_complete(cmd .. " could not be started: " .. err)
-  else
-    stdout:read_start(on_stdout_read)
-    stderr:read_start(on_stderr_read)
-  end
+	if not handle then
+		on_complete(cmd .. " could not be started: " .. err)
+	else
+		stdout:read_start(on_stdout_read)
+		stderr:read_start(on_stderr_read)
+	end
 end
 
 -- Provider API utils
