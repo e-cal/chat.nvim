@@ -2,49 +2,101 @@ local config = require("chat.config")
 
 local M = {}
 
+-- local function exec(cmd, args, on_stdout, on_complete)
+-- 	local stdout = vim.loop.new_pipe()
+-- 	local function on_stdout_read(_, chunk)
+-- 		if chunk then
+-- 			vim.schedule(function()
+-- 				local _stop = on_stdout(chunk)
+-- 				if _stop then
+-- 					handle:kill(15)
+-- 				end
+-- 			end)
+-- 		end
+-- 	end
+--
+-- 	local stderr = vim.loop.new_pipe()
+-- 	local stderr_chunks = {}
+-- 	local function on_stderr_read(_, chunk)
+-- 		if chunk then
+-- 			table.insert(stderr_chunks, chunk)
+-- 		end
+-- 	end
+--
+-- 	local handle, err
+--
+-- 	handle, err = vim.loop.spawn(cmd, {
+-- 		args = args,
+-- 		stdio = { nil, stdout, stderr },
+-- 	}, function(code)
+-- 		stdout:close()
+-- 		stderr:close()
+-- 		handle:close()
+--
+-- 		vim.schedule(function()
+-- 			if code ~= 0 then
+-- 				on_complete(vim.trim(table.concat(stderr_chunks, "")))
+-- 			else
+-- 				on_complete()
+-- 			end
+-- 		end)
+-- 	end)
+--
+-- 	if not handle then
+-- 		on_complete(cmd .. " could not be started: " .. err)
+-- 	else
+-- 		stdout:read_start(on_stdout_read)
+-- 		stderr:read_start(on_stderr_read)
+-- 	end
+-- end
+
+
 local function exec(cmd, args, on_stdout, on_complete)
-	local stdout = vim.loop.new_pipe()
-	local function on_stdout_read(_, chunk)
-		if chunk then
-			vim.schedule(function()
-				on_stdout(chunk)
-			end)
-		end
-	end
+  local stdout = vim.loop.new_pipe()
+  local stderr = vim.loop.new_pipe()
+  local stderr_chunks = {}
+  local handle, err
 
-	local stderr = vim.loop.new_pipe()
-	local stderr_chunks = {}
-	local function on_stderr_read(_, chunk)
-		if chunk then
-			table.insert(stderr_chunks, chunk)
-		end
-	end
+  local function on_stdout_read(_, chunk)
+    if chunk then
+      vim.schedule(function()
+        local should_stop = on_stdout(chunk)
+        if should_stop and handle then
+          handle:kill(15)  -- Send SIGTERM to stop the process
+        end
+      end)
+    end
+  end
 
-	local handle, err
+  local function on_stderr_read(_, chunk)
+    if chunk then
+      table.insert(stderr_chunks, chunk)
+    end
+  end
 
-	handle, err = vim.loop.spawn(cmd, {
-		args = args,
-		stdio = { nil, stdout, stderr },
-	}, function(code)
-		stdout:close()
-		stderr:close()
-		handle:close()
+  handle, err = vim.loop.spawn(cmd, {
+    args = args,
+    stdio = { nil, stdout, stderr },
+  }, function(code)
+    stdout:close()
+    stderr:close()
+    handle:close()
 
-		vim.schedule(function()
-			if code ~= 0 then
-				on_complete(vim.trim(table.concat(stderr_chunks, "")))
-			else
-				on_complete()
-			end
-		end)
-	end)
+    vim.schedule(function()
+      if code ~= 0 then
+        on_complete(vim.trim(table.concat(stderr_chunks, "")))
+      else
+        on_complete()
+      end
+    end)
+  end)
 
-	if not handle then
-		on_complete(cmd .. " could not be started: " .. err)
-	else
-		stdout:read_start(on_stdout_read)
-		stderr:read_start(on_stderr_read)
-	end
+  if not handle then
+    on_complete(cmd .. " could not be started: " .. err)
+  else
+    stdout:read_start(on_stdout_read)
+    stderr:read_start(on_stderr_read)
+  end
 end
 
 -- Provider API utils
@@ -80,8 +132,8 @@ local function get_provider_url(provider)
 		return "https://api.openai.com/v1/chat/completions"
 	elseif provider == "anthropic" then
 		return "https://api.anthropic.com/v1/messages"
-    elseif provider == "deepseek" then
-        return "https://api.deepseek.com/chat/completions"
+	elseif provider == "deepseek" then
+		return "https://api.deepseek.com/chat/completions"
 	elseif provider == "groq" then
 		return "https://api.groq.com/openai/v1/chat/completions"
 	end
@@ -210,39 +262,44 @@ local function handle_complete(err, raw_chunks, on_complete)
 end
 
 M.request = function(messages, model, temp, bufnr, on_complete, stream_response, on_chunk)
-    local args = get_curl_args(messages, model, temp, stream_response or false)
+	local args = get_curl_args(messages, model, temp, stream_response or false)
 
-    if stream_response then
-        local raw_chunks = {}
-        local on_stdout_chunk = function(chunk)
-            if on_chunk then
-                on_chunk(nil, chunk)
-            else
-                handle_stream_chunk(chunk, bufnr, raw_chunks)
-            end
-        end
+	if stream_response then
+		local raw_chunks = {}
+		local on_stdout_chunk = function(chunk)
+			-- Check for stop signal
+			if vim.g.chat_stop_generation then
+				vim.g.chat_stop_generation = false
+				return true
+			end
+			if on_chunk then
+				on_chunk(nil, chunk)
+			else
+				handle_stream_chunk(chunk, bufnr, raw_chunks)
+			end
+		end
 
-        local _on_complete = function(err, _)
-            handle_complete(err, raw_chunks, on_complete)
-        end
+		local _on_complete = function(err, _)
+			handle_complete(err, raw_chunks, on_complete)
+		end
 
-        exec("curl", args, on_stdout_chunk, _on_complete)
-    else
-        local on_stdout = function(response_body)
-            local ok, response = pcall(vim.json.decode, response_body)
-            if not ok then
-                on_complete("Failed to parse response JSON: " .. response_body)
-                return
-            end
-            if response.error then
-                on_complete("Request error: " .. response.error.message)
-                return
-            end
-            on_complete(nil, response)
-        end
+		exec("curl", args, on_stdout_chunk, _on_complete)
+	else
+		local on_stdout = function(response_body)
+			local ok, response = pcall(vim.json.decode, response_body)
+			if not ok then
+				on_complete("Failed to parse response JSON: " .. response_body)
+				return
+			end
+			if response.error then
+				on_complete("Request error: " .. response.error.message)
+				return
+			end
+			on_complete(nil, response)
+		end
 
-        exec("curl", args, on_stdout, on_complete)
-    end
+		exec("curl", args, on_stdout, on_complete)
+	end
 end
 
 return M

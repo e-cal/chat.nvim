@@ -9,6 +9,7 @@ M.setup_buffer = function(bufnr)
 	-- keymaps
 	vim.keymap.set("n", config.opts.keymap.send_message, M.send_message, key_opts)
 	vim.keymap.set("n", config.opts.keymap.yank_code, M.yank_code, key_opts)
+    vim.keymap.set("n", config.opts.keymap.stop_generation, M.stop_generation, key_opts)
 
 	-- global
 	if config.opts.keymap.paste_code ~= "" then
@@ -72,7 +73,7 @@ M.create_new_chat = function(selection, ft)
 		"",
 		config.opts.delimiters.system,
 		"",
-		config.opts.default.system_message,
+		config.opts.default.system_message:gsub("\n", " "),
 		"",
 		config.opts.delimiters.chat,
 		"",
@@ -309,20 +310,21 @@ end
 
 local function generate_title(_messages, bufnr)
 	local messages = {
-		_messages[2],
 		{ role = "system", content = "Write a short (1-5 words) title for this conversation:" },
+		_messages[2],
+		{ role = "user", content = "Write a short (1-5 words) title for this conversation based on the previous message. Only write the title, do not respond to the query." },
 	}
 
 	local on_complete = function(err, res)
 		if not res then
-			print("No response")
+			-- print("[chat.nvim] No response")
 			return
 		end
 		if err then
-			vim.api.nvim_err_writeln("Error generating conversation title: " .. err)
+			vim.api.nvim_err_writeln("[chat.nvim] Error generating conversation title: " .. err)
 		else
 			local title = res.choices[1].message.content
-			print("Generated title: " .. title)
+			print("[chat.nvim] Generated title: " .. title)
 			vim.api.nvim_buf_set_lines(bufnr, 0, 1, false, { "# " .. title })
 		end
 	end
@@ -335,7 +337,7 @@ M.send_message = function()
 	local messages, model, temp = parse_messages(bufnr)
 
 	if messages[#messages].role == "user" and messages[#messages].content == "" then
-		print("Skipping empty user message")
+		print("[chat.nvim] Skipping empty user message")
 		return
 	end
 
@@ -349,13 +351,13 @@ M.send_message = function()
 	vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, { "", "", config.opts.delimiters.assistant, "", "" })
 
 	if buf_lines[1] == config.opts.default.title then
-		print("Generating title...")
+		print("[chat.nvim] Generating title...")
 		generate_title(messages, bufnr)
 	end
 
 	local on_complete = function(err, _)
 		if err then
-			vim.api.nvim_err_writeln("Error streaming response: " .. err)
+			vim.api.nvim_err_writeln("[chat.nvim] Error streaming response: " .. err)
 		end
 
 		vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, { "", "", config.opts.delimiters.user, "", "" })
@@ -484,7 +486,7 @@ M.yank_code = function()
 				local start_row, start_col, end_row, end_col = child:range()
 				local content = vim.api.nvim_buf_get_text(0, start_row, start_col, end_row, end_col, {})
 				vim.fn.setreg(config.opts.code_register, table.concat(content, "\n"))
-				print("yanked code")
+				print("[chat.nvim] yanked code")
 				return
 			end
 		end
@@ -492,65 +494,70 @@ M.yank_code = function()
 end
 
 M.inline = function(context)
-    local bufnr = vim.api.nvim_get_current_buf()
-    local cursor = vim.api.nvim_win_get_cursor(0)
-    local row, col = cursor[1] - 1, cursor[2]
+	local bufnr = vim.api.nvim_get_current_buf()
+	local cursor = vim.api.nvim_win_get_cursor(0)
+	local row, col = cursor[1] - 1, cursor[2]
 
-    local messages = {
-        { role = "system", content = config.opts.inline.system_message },
-        { role = "user", content = context }
-    }
+	local messages = {
+		{ role = "system", content = config.opts.inline.system_message },
+		{ role = "user", content = context },
+	}
 
-    local on_chunk = function(err, chunk)
-        if err then
-            vim.api.nvim_err_writeln("Error streaming response: " .. err)
-            return
-        end
-        if chunk then
-            for chunk_json in chunk:gmatch("[^\n]+") do
-                local raw_json = string.gsub(chunk_json, "^data: ", "")
-                local ok, chunk_data = pcall(vim.json.decode, raw_json)
-                if not ok then
-                    goto continue
-                end
+	local on_chunk = function(err, chunk)
+		if err then
+			vim.api.nvim_err_writeln("Error streaming response: " .. err)
+			return
+		end
+		if chunk then
+			for chunk_json in chunk:gmatch("[^\n]+") do
+				local raw_json = string.gsub(chunk_json, "^data: ", "")
+				local ok, chunk_data = pcall(vim.json.decode, raw_json)
+				if not ok then
+					goto continue
+				end
 
-                local chunk_content
-                if chunk_data.choices ~= nil then -- openai/groq api
-                    chunk_content = chunk_data.choices[1].delta.content
-                elseif chunk_data.type == "content_block_delta" then -- anthropic api
-                    chunk_content = chunk_data.delta.text
-                end
-                if chunk_content == nil then
-                    goto continue
-                end
+				local chunk_content
+				if chunk_data.choices ~= nil then -- openai/groq api
+					chunk_content = chunk_data.choices[1].delta.content
+				elseif chunk_data.type == "content_block_delta" then -- anthropic api
+					chunk_content = chunk_data.delta.text
+				end
+				if chunk_content == nil then
+					goto continue
+				end
 
-                local lines = vim.split(chunk_content, "\n")
-                for i, line in ipairs(lines) do
-                    if i == 1 then
-                        local current_line = vim.api.nvim_buf_get_lines(bufnr, row, row + 1, false)[1]
-                        local new_line = current_line:sub(1, col) .. line .. current_line:sub(col + 1)
-                        vim.api.nvim_buf_set_lines(bufnr, row, row + 1, false, {new_line})
-                        col = col + #line
-                    else
-                        row = row + 1
-                        vim.api.nvim_buf_set_lines(bufnr, row, row, false, {line})
-                        col = #line
-                    end
-                end
-                vim.api.nvim_win_set_cursor(0, {row + 1, col})
+				local lines = vim.split(chunk_content, "\n")
+				for i, line in ipairs(lines) do
+					if i == 1 then
+						local current_line = vim.api.nvim_buf_get_lines(bufnr, row, row + 1, false)[1]
+						local new_line = current_line:sub(1, col) .. line .. current_line:sub(col + 1)
+						vim.api.nvim_buf_set_lines(bufnr, row, row + 1, false, { new_line })
+						col = col + #line
+					else
+						row = row + 1
+						vim.api.nvim_buf_set_lines(bufnr, row, row, false, { line })
+						col = #line
+					end
+				end
+				vim.api.nvim_win_set_cursor(0, { row + 1, col })
 
-                ::continue::
-            end
-        end
-    end
+				::continue::
+			end
+		end
+	end
 
-    local on_complete = function(err, _)
-        if err then
-            vim.api.nvim_err_writeln("Error completing inline response: " .. err)
-        end
-    end
+	local on_complete = function(err, _)
+		if err then
+			vim.api.nvim_err_writeln("Error completing inline response: " .. err)
+		end
+	end
 
-    api.request(messages, config.opts.inline.model, config.opts.inline.temp, bufnr, on_complete, true, on_chunk)
+	api.request(messages, config.opts.inline.model, config.opts.inline.temp, bufnr, on_complete, true, on_chunk)
+end
+
+M.stop_generation = function()
+    vim.g.chat_stop_generation = true
+    print("[chat.nvim] Stopping generation")
 end
 
 return M

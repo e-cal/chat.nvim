@@ -27,19 +27,18 @@ M.defaults = function()
                 Answer concisely and when asked for code avoid unnecessary verbose explanation.
             ]],
 		},
-		title_model = "llama3-8b-8192", -- model used to generate chat titles
+		title_model = "llama3-70b-8192", -- model used to generate chat titles
 		auto_scroll = true, -- scroll to bottom of chat when response is finished
 		auto_format = true, -- automatically format the chat on save
 		wrap = false, -- enable line wrap (j/k are bound to gj and gk in the chat buffer so line wrap doesn't suck)
 		scroll_on_focus = false, -- automatically scroll to the bottom when chat is focused
 		code_register = "c", -- register to use for yanking/pasting code
 		keymap = {
-			-- in chat (normal mode)
-			send_message = "<CR>",
+			send_message = "<CR>", -- normal mode keybind in chat windows to send message
 			yank_code = "<leader>cy", -- yank the fenced code block under cursor into the code register
 			paste_code = "<leader>cp", -- paste from the code register (empty string to unset)
-			-- in telescope menu
-			delete_chat = "<C-d>", -- keymap to delete a chat
+			delete_chat = "<C-d>", -- keymap to delete a chat (in telescope menu)
+      stop_generation = "<C-c>",
 		},
 		delimiters = { -- delimiters for sections of the chat
 			settings = "## Settings",
