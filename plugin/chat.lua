@@ -115,6 +115,15 @@ end, {
 	end,
 })
 
+cmd("ChatSetupBuffer", function()
+    require("chat").setup_buffer()
+end, {})
+
+
+cmd("ChatStop", function()
+    require("chat").stop()
+end, {})
+
 -------------------------------------------------------------------------------
 --                               Auto Commands                               --
 -------------------------------------------------------------------------------

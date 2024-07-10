@@ -8,6 +8,10 @@ M.setup = function(opts)
 	config.setup(opts)
 end
 
+M.setup_buffer = function()
+	chat.setup_buffer(vim.api.nvim_get_current_buf())
+end
+
 M.focus = function(size, direction)
 	popup.open(size, direction)
 end
@@ -35,7 +39,11 @@ M.delete = function()
 end
 
 M.inline = function(context)
-  chat.inline(context)
+	chat.inline(context)
+end
+
+M.stop = function()
+    chat.stop_generation()
 end
 
 return M

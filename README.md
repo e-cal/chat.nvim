@@ -35,6 +35,16 @@ Using lazy.nvim
 
 ## Usage
 
+- `ChatInline` or `ChatInline replace` to have the llm complete inline
+  - if called from visual mode, sends visual selection
+  - if called from normal mode, sends buffer up to (and including) the cursor line
+- `ChatStop` to stop any current llm generation
+
+### Chat Buffers
+
+- `<CR>` in normal mode sends your chat message
+  - all chat history can be edited (its just markdown) and will be parsed using the
+    prefixes defined in your config
 - `ChatFocus` has dynamic behavior:
   - _Chat is not open_: opens and focuses the chat window, with your most recent chat loaded
   - _Chat is open, not focused_: focuses the chat window
@@ -47,9 +57,9 @@ Using lazy.nvim
 - `ChatNew` to start a new chat
 - `ChatOpen` to open an existing chat
 - `ChatDelete` to delete the current chat (and close ui)
-- `<CR>` in normal mode sends your chat message
-- all history can be edited as needed and will be sent as seen in the buffer
-  - be careful not to change or forget the user/assistant prefixes (set in config) or messages will be merged
+- `ChatSetupBuffer` to setup the current buffer as a chat buffer (regardless of
+  if its a `.chat` file or not)
+  - useful to reset the textwidth after resizing a popup
 
 ## Configuration
 
