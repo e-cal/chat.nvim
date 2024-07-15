@@ -124,6 +124,10 @@ cmd("ChatStop", function()
     require("chat").stop()
 end, {})
 
+cmd("ChatToggleFormatting", function()
+    require("chat").toggle_formatting()
+end, {})
+
 -------------------------------------------------------------------------------
 --                               Auto Commands                               --
 -------------------------------------------------------------------------------

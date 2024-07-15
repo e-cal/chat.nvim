@@ -383,7 +383,11 @@ M.delete = function()
 end
 
 M.format_chat = function(bufnr)
-	if not config.opts.auto_format then
+    if vim.g.chat_formatting == nil then
+        vim.g.chat_formatting = config.opts.auto_format
+    end
+
+	if not vim.g.chat_formatting then
 		return
 	end
 

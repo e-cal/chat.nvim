@@ -12,6 +12,7 @@ M.setup_buffer = function()
 	chat.setup_buffer(vim.api.nvim_get_current_buf())
 end
 
+
 M.focus = function(size, direction)
 	popup.open(size, direction)
 end
@@ -40,6 +41,16 @@ end
 
 M.inline = function(context)
 	chat.inline(context)
+end
+
+M.toggle_formatting = function()
+    if vim.g.chat_formatting then
+        vim.g.chat_formatting = false
+        print("[chat.nvim] Disabling formatting")
+    else
+        vim.g.chat_formatting = true
+        print("[chat.nvim] Enabling formatting")
+    end
 end
 
 M.stop = function()
