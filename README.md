@@ -13,7 +13,7 @@ and streams the response into the file. Works like an API playground.
   - or one-shot send visual selection and stream response directly into the current buffer
 - Configurable auto formatting, code yank/paste keybinds, and other quality of life features
 
-![screenshot](https://github.com/user-attachments/assets/4e06c53c-d14e-4851-ae69-ea8b1f62f693)
+![screenshot](https://github.com/user-attachments/assets/e49f8deb-aadb-4b1a-928f-ad91912b71db)
 
 
 ## Installation
