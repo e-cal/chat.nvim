@@ -52,6 +52,27 @@ end
 
 -- Provider API utils
 
+-- list groq models and map model to api model suffix (https://console.groq.com/docs/models)
+local groq_models = {
+	["llama3-8b"] = "8192",
+	["llama3-70b"] = "8192",
+	["mixtral"] = "8x7b-32768",
+	["mixtral-8x7b"] = "32768",
+	["gemma-7b"] = "it",
+	["llama-3.1-8b"] = "instant",
+	["groq/llama-3.1-70b"] = "versatile",
+}
+for model, suffix in pairs(groq_models) do
+	groq_models[model .. "-" .. suffix] = ""
+end
+
+-- list fireworks models and map model to api model name (https://fireworks.ai/models)
+local fireworks_models = {
+	["llama-3.1-405b"] = "llama-v3p1-405b-instruct",
+	["llama-3.1-70b"] = "llama-v3p1-70b-instruct",
+	["fireworks/llama-3.1-8b"] = "llama-v3p1-8b-instruct",
+}
+
 local function get_provider(model)
 	if model:find("gpt") then
 		return "openai"
@@ -59,8 +80,12 @@ local function get_provider(model)
 		return "anthropic"
 	elseif model:find("deepseek") then
 		return "deepseek"
-	else
+	elseif groq_models[model] or vim.tbl_contains(vim.tbl_keys(groq_models), model) then
 		return "groq"
+	elseif fireworks_models[model] or vim.tbl_contains(vim.tbl_keys(fireworks_models), model) then
+		return "fireworks"
+	else
+		print("[chat.nvim] Error: Missing provider for " .. model)
 	end
 end
 
@@ -87,6 +112,8 @@ local function get_provider_url(provider)
 		return "https://api.deepseek.com/chat/completions"
 	elseif provider == "groq" then
 		return "https://api.groq.com/openai/v1/chat/completions"
+	elseif provider == "fireworks" then
+		return "https://api.fireworks.ai/inference/v1/chat/completions"
 	end
 end
 
@@ -135,17 +162,11 @@ local function get_curl_args(messages, model, temp, stream)
 			table.remove(messages, 1)
 		end
 	elseif provider == "groq" then
-		-- map model to api model name (https://console.groq.com/docs/models)
-		local model_suffix = {
-			["llama3-8b"] = "8192",
-			["llama3-70b"] = "8192",
-			["mixtral"] = "8x7b-32768",
-			["mixtral-8x7b"] = "32768",
-			["gemma-7b"] = "it",
-		}
-		if model_suffix[model] then
-			model = model .. "-" .. model_suffix[model]
+		if groq_models[model] then
+			model = model .. "-" .. groq_models[model]
 		end
+	elseif provider == "fireworks" then
+		model = "accounts/fireworks/models/" .. fireworks_models[model]
 	end
 	data["messages"] = messages
 	data["model"] = model

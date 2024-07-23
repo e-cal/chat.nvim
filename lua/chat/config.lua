@@ -16,6 +16,9 @@ M.defaults = function()
 			groq = function()
 				return os.getenv("GROQ_API_KEY") or vim.fn.input("Groq API Key: ")
 			end,
+			fireworks = function()
+				return os.getenv("FIREWORKS_API_KEY") or vim.fn.input("Fireworks AI API Key: ")
+			end,
 		},
 		default = { -- default values for chat parameters (overwritten if changed inline in chat)
 			title = "# New Chat",
