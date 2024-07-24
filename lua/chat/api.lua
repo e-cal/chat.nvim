@@ -162,7 +162,7 @@ local function get_curl_args(messages, model, temp, stream)
 			table.remove(messages, 1)
 		end
 	elseif provider == "groq" then
-		if groq_models[model] then
+		if groq_models[model] and groq_models[model] ~= "" then
 			model = model .. "-" .. groq_models[model]
 		end
 	elseif provider == "fireworks" then

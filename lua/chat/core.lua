@@ -316,12 +316,10 @@ local function generate_title(_messages, bufnr)
 	}
 
 	local on_complete = function(err, res)
-		if not res then
-			-- print("[chat.nvim] No response")
-			return
-		end
 		if err then
 			vim.api.nvim_err_writeln("[chat.nvim] Error generating conversation title: " .. err)
+        elseif not res then
+			return
 		else
 			local title = res.choices[1].message.content
 			print("[chat.nvim] Generated title: " .. title)
