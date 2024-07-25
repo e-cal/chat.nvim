@@ -160,7 +160,7 @@ M.open = function(popup)
 
 		local entry_maker = function(line)
 			local entry = require("telescope.make_entry").gen_from_vimgrep()(line)
-			if entry.value:match("1:1") then
+			if entry.value:match(":1:1") then
 				local filename, lnum, col, text = line:match("^(.-):(%d+):(%d+):(.*)$")
 				entry.filename = filename
 				entry.lnum = tonumber(lnum)
