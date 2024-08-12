@@ -19,6 +19,12 @@ M.defaults = function()
 			fireworks = function()
 				return os.getenv("FIREWORKS_API_KEY") or vim.fn.input("Fireworks AI API Key: ")
 			end,
+			topology = function()
+				return os.getenv("TOPOLOGY_API_KEY") or vim.fn.input("Topology API Key: ")
+			end,
+			openrouter = function()
+				return os.getenv("OPENROUTER_API_KEY") or vim.fn.input("OpenRouter API Key: ")
+			end,
 		},
 		default = { -- default values for chat parameters (overwritten if changed inline in chat)
 			title = "# New Chat",
@@ -30,7 +36,7 @@ M.defaults = function()
                 Answer concisely and when asked for code avoid unnecessary verbose explanation.
             ]],
 		},
-		title_model = "llama3-70b-8192", -- model used to generate chat titles
+		title_model = "llama3-70b", -- model used to generate chat titles
 		auto_scroll = true, -- scroll to bottom of chat when response is finished
 		auto_format = true, -- automatically format the chat on save
 		wrap = false, -- enable line wrap (j/k are bound to gj and gk in the chat buffer so line wrap doesn't suck)

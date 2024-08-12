@@ -2,6 +2,109 @@ local config = require("chat.config")
 
 local M = {}
 
+local function get_api_key(provider)
+	local api_key_config = config.opts.api_keys[provider]
+	local api_key = type(api_key_config) == "function" and api_key_config() or api_key_config
+	if type(api_key) ~= "string" or api_key == "" then
+		print("Error: Missing " .. provider .. " API key")
+	end
+	return api_key
+end
+
+--[[
+provider = {
+    url:  string provider chat completions url
+    models: string to match for model names | table list of models (model map is used to enumerate models if not present)
+    model_map: table map model abbreviation to api model name
+    headers: custom headers for the provider
+    prepare_data: function (params: data, model) to modify data before sending (if provider doesn't expect standard openai data format)
+}
+]]
+local providers = {
+	openai = {
+		url = "https://api.openai.com/v1/chat/completions",
+		models = "gpt",
+		-- prepare_data = function(data, model)
+		-- end
+	},
+	anthropic = {
+		url = "https://api.anthropic.com/v1/messages",
+		models = "claude",
+		model_map = {
+			["claude-3-haiku"] = "claude-3-haiku-20240307",
+			["claude-3-sonnet"] = "claude-3-sonnet-20240229",
+			["claude-3-opus"] = "claude-3-opus-20240229",
+			["claude-3.5-sonnet"] = "claude-3-5-sonnet-20240620",
+		},
+		headers = function()
+			return {
+				["Content-Type"] = "application/json",
+				["anthropic-version"] = "2023-06-01",
+				["x-api-key"] = get_api_key("anthropic"),
+			}
+		end,
+		prepare_data = function(data, _)
+			data.max_tokens = 4096
+			if data.messages[1].role == "system" then
+				data.system = data.messages[1].content
+				table.remove(data.messages, 1)
+			end
+			return data
+		end,
+	},
+	deepseek = {
+		url = "https://api.deepseek.com/chat/completions",
+		models = "deepseek",
+	},
+	groq = {
+		url = "https://api.groq.com/openai/v1/chat/completions",
+		model_map = {
+			["llama3-8b"] = "llama3-8b-8192",
+			["llama3-70b"] = "llama3-70b-8192",
+			["mixtral"] = "mixtral-8x7b-32768",
+			["mixtral-8x7b"] = "mixtral-8x7b-32768",
+			["gemma-7b"] = "gemma-7b-it",
+			["llama-3.1-8b"] = "llama-3.1-8b-instant",
+			["groq/llama-3.1-70b"] = "llama-3.1-70b-versatile",
+		},
+	},
+	fireworks = {
+		url = "https://api.fireworks.ai/inference/v1/chat/completions",
+		models = {
+			["fireworks/llama-3.1-8b"] = "llama-v3p1-8b-instruct",
+			["llama-3.1-70b"] = "llama-v3p1-70b-instruct",
+			["llama-3.1-405b"] = "llama-v3p1-405b-instruct",
+		},
+		prepare_data = function(data, model)
+			data.model = "accounts/fireworks/models/" .. model
+			return data
+		end,
+	},
+	topology = {
+		url = "https://topologychat.com/api/chat/completions",
+		models = "topology",
+		prepare_data = function(data, model)
+			-- TODO: this should be managed the same as api keys using config probably
+			local f = assert(io.open(os.getenv("HOME") .. "/.cache/clm-default-partition", "r"))
+			local partition_id = string.gsub(f:read("*all"), "\n", "")
+			f:close()
+			data.partition_id = partition_id
+			return data
+		end,
+	},
+	openrouter = { -- fallback
+		url = "https://openrouter.ai/api/v1/chat/completions",
+	},
+}
+
+local function default_headers(provider)
+	local api_key = get_api_key(provider)
+	return {
+		["Content-Type"] = "application/json",
+		["Authorization"] = "Bearer " .. api_key,
+	}
+end
+
 local function exec(cmd, args, on_stdout, on_complete)
 	local stdout = vim.loop.new_pipe()
 	local stderr = vim.loop.new_pipe()
@@ -50,126 +153,58 @@ local function exec(cmd, args, on_stdout, on_complete)
 	end
 end
 
--- Provider API utils
-
--- list groq models and map model to api model suffix (https://console.groq.com/docs/models)
-local groq_models = {
-	["llama3-8b"] = "8192",
-	["llama3-70b"] = "8192",
-	["mixtral"] = "8x7b-32768",
-	["mixtral-8x7b"] = "32768",
-	["gemma-7b"] = "it",
-	["llama-3.1-8b"] = "instant",
-	["groq/llama-3.1-70b"] = "versatile",
-}
-for model, suffix in pairs(groq_models) do
-	groq_models[model .. "-" .. suffix] = ""
-end
-
--- list fireworks models and map model to api model name (https://fireworks.ai/models)
-local fireworks_models = {
-	["llama-3.1-405b"] = "llama-v3p1-405b-instruct",
-	["llama-3.1-70b"] = "llama-v3p1-70b-instruct",
-	["fireworks/llama-3.1-8b"] = "llama-v3p1-8b-instruct",
-}
-
 local function get_provider(model)
-	if model:find("gpt") then
-		return "openai"
-	elseif model:find("claude") then
-		return "anthropic"
-	elseif model:find("deepseek") then
-		return "deepseek"
-	elseif groq_models[model] or vim.tbl_contains(vim.tbl_keys(groq_models), model) then
-		return "groq"
-	elseif fireworks_models[model] or vim.tbl_contains(vim.tbl_keys(fireworks_models), model) then
-		return "fireworks"
-	else
-		print("[chat.nvim] Error: Missing provider for " .. model)
+	for provider_name, provider_data in pairs(providers) do
+		if
+			type(provider_data.models) == "table"
+			and (provider_data.models[model] or vim.tbl_contains(vim.tbl_keys(provider_data.models), model))
+		then
+			return provider_name
+		elseif type(provider_data.models) == "string" and model:find(provider_data.models) then
+			return provider_name
+		elseif
+			provider_data.model_map
+			and (provider_data.model_map[model] or vim.tbl_contains(vim.tbl_keys(provider_data.model_map), model))
+		then
+			return provider_name
+		end
 	end
-end
-
-local function get_api_key(provider)
-	local api_key
-	local api_key_config = config.opts.api_keys[provider]
-	if type(api_key_config) == "string" then
-		api_key = api_key_config
-	else
-		api_key = api_key_config()
-	end
-	if type(api_key) ~= "string" or api_key == "" then
-		print("Error: Missing " .. provider .. " API key")
-	end
-	return api_key
-end
-
-local function get_provider_url(provider)
-	if provider == "openai" then
-		return "https://api.openai.com/v1/chat/completions"
-	elseif provider == "anthropic" then
-		return "https://api.anthropic.com/v1/messages"
-	elseif provider == "deepseek" then
-		return "https://api.deepseek.com/chat/completions"
-	elseif provider == "groq" then
-		return "https://api.groq.com/openai/v1/chat/completions"
-	elseif provider == "fireworks" then
-		return "https://api.fireworks.ai/inference/v1/chat/completions"
-	end
-end
-
-local function get_headers(provider)
-	local headers = { ["Content-Type"] = "application/json" }
-	if provider == "anthropic" then
-		headers["anthropic-version"] = "2023-06-01" -- https://docs.anthropic.com/en/api/versioning
-		headers["x-api-key"] = get_api_key(provider)
-	else
-		headers["Authorization"] = "Bearer " .. get_api_key(provider)
-	end
-	return headers
+	print("[chat.nvim] Missing provider for " .. model .. ". Using openrouter as fallback.")
+	return "openrouter"
 end
 
 -- Request logic
 
 local function get_curl_args(messages, model, temp, stream)
-	local provider = get_provider(model)
-	local url = get_provider_url(provider)
-	local headers = get_headers(provider)
-
-	local data = { temperature = temp }
-	data["stream"] = stream
-
-	if provider == "anthropic" then
-		data["max_tokens"] = 4096
-
-		if model == "claude-3.5-sonnet" then
-			model = "claude-3-5-sonnet"
-		end
-		-- map model to api model name (https://docs.anthropic.com/en/docs/about-claude/models)
-		local model_suffix = {
-			["claude-3-haiku"] = "20240307",
-			["claude-3-sonnet"] = "20240229",
-			["claude-3-opus"] = "20240229",
-			["claude-3-5-sonnet"] = "20240620",
-		}
-		if model_suffix[model] then
-			model = model .. "-" .. model_suffix[model]
-		end
-
-		-- supply system message as separate parameter
-		local first_message = messages[1]
-		if first_message.role == "system" then
-			data["system"] = first_message.content
-			table.remove(messages, 1)
-		end
-	elseif provider == "groq" then
-		if groq_models[model] and groq_models[model] ~= "" then
-			model = model .. "-" .. groq_models[model]
-		end
-	elseif provider == "fireworks" then
-		model = "accounts/fireworks/models/" .. fireworks_models[model]
+	local provider_name = get_provider(model)
+	local provider = providers[provider_name]
+	local url = provider.url
+	local headers
+	if provider.headers then
+		headers = provider.headers()
+	else
+		headers = default_headers(provider_name)
 	end
-	data["messages"] = messages
-	data["model"] = model
+
+	if provider.model_map then
+		for key, value in pairs(provider.model_map) do
+			if model == key or model == value then
+				model = value
+				break
+			end
+		end
+	end
+
+	local data = {
+		temperature = temp,
+		stream = stream,
+		messages = messages,
+		model = model,
+	}
+
+	if provider.prepare_data then
+		data = provider.prepare_data(data, model)
+	end
 
 	local curl_args = { "--silent", "--show-error", url }
 	if stream then
@@ -239,7 +274,6 @@ M.request = function(messages, model, temp, bufnr, on_complete, stream_response,
 	if stream_response then
 		local raw_chunks = {}
 		local on_stdout_chunk = function(chunk)
-			-- Check for stop signal
 			if vim.g.chat_stop_generation then
 				vim.g.chat_stop_generation = false
 				return true
