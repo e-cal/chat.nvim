@@ -165,3 +165,21 @@ Only do exactly as instructed, do not add code that was not explicitly asked for
   },
 }
 ```
+
+### API Key Management
+
+It is recommended to either export your api keys in your shell environment and
+use the api key functions as they are, or define your own.
+
+For example, if you have your openai api key stored as text files on your system you might change the function to:
+
+```lua
+api_keys = {
+  openai = function()
+    local f = assert(io.open(os.getenv("HOME") .. "/<path to key>", "r"))
+    local api_key = string.gsub(f:read("*all"), "\n", "")
+    f:close()
+    return api_key
+  end,
+}
+```
