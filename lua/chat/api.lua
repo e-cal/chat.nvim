@@ -65,20 +65,8 @@ local providers = {
 			["mixtral-8x7b"] = "mixtral-8x7b-32768",
 			["gemma-7b"] = "gemma-7b-it",
 			["llama-3.1-8b"] = "llama-3.1-8b-instant",
-			["groq/llama-3.1-70b"] = "llama-3.1-70b-versatile",
+			["llama-3.1-70b"] = "llama-3.1-70b-versatile",
 		},
-	},
-	fireworks = {
-		url = "https://api.fireworks.ai/inference/v1/chat/completions",
-		models = {
-			["fireworks/llama-3.1-8b"] = "llama-v3p1-8b-instruct",
-			["llama-3.1-70b"] = "llama-v3p1-70b-instruct",
-			["llama-3.1-405b"] = "llama-v3p1-405b-instruct",
-		},
-		prepare_data = function(data, model)
-			data.model = "accounts/fireworks/models/" .. model
-			return data
-		end,
 	},
 	topology = {
 		url = "https://topologychat.com/api/chat/completions",
@@ -89,6 +77,18 @@ local providers = {
 			local partition_id = string.gsub(f:read("*all"), "\n", "")
 			f:close()
 			data.partition_id = partition_id
+			return data
+		end,
+	},
+	fireworks = {
+		url = "https://api.fireworks.ai/inference/v1/chat/completions",
+		models = {
+			["fireworks/llama-3.1-8b"] = "llama-v3p1-8b-instruct",
+			["fireworks/llama-3.1-70b"] = "llama-v3p1-70b-instruct",
+			["llama-3.1-405b"] = "llama-v3p1-405b-instruct",
+		},
+		prepare_data = function(data, model)
+			data.model = "accounts/fireworks/models/" .. model
 			return data
 		end,
 	},
@@ -169,7 +169,7 @@ local function get_provider(model)
 			return provider_name
 		end
 	end
-	print("[chat.nvim] Missing provider for " .. model .. ". Using openrouter as fallback.")
+	-- print("[chat.nvim] Missing provider for " .. model .. ". Using openrouter as fallback.")
 	return "openrouter"
 end
 

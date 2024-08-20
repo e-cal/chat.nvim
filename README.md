@@ -65,29 +65,25 @@ Using lazy.nvim
 
 ### Models
 
-> Set the model at the top of chat buffers and in the config for inline
-> completions. Most model names have shorthand mappings you can use instead of
-> the full _correct_ model name to make it easier to remember.
-> 
-> Example models are not exhaustive, they are meant to show
-> how you can include/exclude suffixes and prefixes. When in doubt, use the full
-> correct API name.
->
-> If you want more models or providers open a PR/issue.
+Set the model at the top of chat buffers and in the config for inline
+completions.
 
 - **OpenAI**: all `gpt` models supported
   - use the model name as it appears in the API
-  - e.g. `gpt-3.5-turbo`, `gpt-4o`, `gpt-4`, `gpt-4-0613`, etc
+  - e.g. `gpt-3.5-turbo`, `gpt-4o`, `gpt-4`, `gpt-4-0613`
 - **Anthropic**: all `claude` models supported
   - can use the model name with or without the date suffix
   - can use `3.5` or `3-5`
-  - e.g. `claude-3.5-sonnet`, `claude-3-5-sonnet`, `claude-3-opus`, `claude-3-haiku-20240307`, etc
+  - e.g. `claude-3.5-sonnet`, `claude-3-5-sonnet`, `claude-3-opus`, `claude-3-haiku-20240307`
+- **DeepSeek**: `deepseek-chat` (DeepSeek-V2-062) and `deepseek-coder` (DeepSeek-Coder-V2-0724)
+- **Topology**: `topology-tiny`, `topology-small`, and `topology-medium` 
 - **Groq**: all models supported
   - can use the model name with or without the suffix (date/type)
-  - must add `groq/` prefix to use groq for Llama 3.1 70B and 405B (for 3.1 only 8B defaults to groq without the prefix)
-  - e.g. `llama3-8b`, `llama3-70b-8192`, `mixtral-8x7b`, `gemma-7b`, `llama-3.1-8b`, `groq/llama-3.1-70b`, etc
-- **Fireworks AI**: currently only Llama 3.1
-  - **all models currently supported**: `llama-3.1-405b`, `llama-3.1-70b`, `fireworks/llama-3.1-8b`
+  - must add `groq/` prefix to use groq for Llama 3.1 405B (for 3.1 only 8B defaults to groq without the prefix)
+  - e.g. `llama3-8b`, `llama3-70b-8192`, `mixtral-8x7b`, `gemma-7b`, `llama-3.1-8b`, `llama-3.1-70b`, `groq/llama-3.1-405b`
+- **Fireworks AI**: `llama-3.1-405b`, `fireworks/llama-3.1-70b`, `fireworks/llama-3.1-8b`
+- **OpenRouter**: all models supported, enter model with prefix as it is on [OpenRouter](https://openrouter.ai/models)
+  - e.g. `meta-llama/llama-3.1-8b-instruct:free`, `nousresearch/hermes-3-llama-3.1-70b`, `meta-llama/llama-3.1-405b`, `perplexity/llama-3.1-sonar-large-128k-online`
 
 ## Configuration
 
