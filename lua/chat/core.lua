@@ -402,6 +402,15 @@ M.format_chat = function(bufnr)
 		local fix_backticks = {}
 
 		for i, line in ipairs(buf_lines) do
+            -- skip delimiter lines
+            for _, delimiter in pairs(config.opts.delimiters) do
+                if line:match("^%s*" .. delimiter:gsub("[%^$()%.%*%+%-?[%]]", "%%%1")) then
+                    format_sections[#format_sections + 1] = { range_start, i - 1 }
+                    range_start = i + 1
+                    goto continue
+                end
+            end
+
 			if line:match("```") then
 				if not line:match("^%s*```") then
 					fix_backticks[#fix_backticks + 1] = i
@@ -428,6 +437,7 @@ M.format_chat = function(bufnr)
 				range_start = i
 				in_list_item = false
 			end
+            ::continue::
 		end
 
 		if range_start <= #buf_lines then
