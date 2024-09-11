@@ -39,8 +39,8 @@ M.delete = function()
 	chat.delete()
 end
 
-M.inline = function(context)
-	chat.inline(context)
+M.inline = function(context, model)
+	chat.inline(context, model)
 end
 
 M.toggle_formatting = function()

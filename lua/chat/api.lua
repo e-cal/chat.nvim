@@ -24,8 +24,6 @@ local providers = {
 	openai = {
 		url = "https://api.openai.com/v1/chat/completions",
 		models = "gpt",
-		-- prepare_data = function(data, model)
-		-- end
 	},
 	anthropic = {
 		url = "https://api.anthropic.com/v1/messages",
@@ -82,13 +80,32 @@ local providers = {
 	},
 	fireworks = {
 		url = "https://api.fireworks.ai/inference/v1/chat/completions",
-		models = {
+		model_map = {
 			["fireworks/llama-3.1-8b"] = "llama-v3p1-8b-instruct",
 			["fireworks/llama-3.1-70b"] = "llama-v3p1-70b-instruct",
-			["llama-3.1-405b"] = "llama-v3p1-405b-instruct",
+			["fireworks/llama-3.1-405b"] = "llama-v3p1-405b-instruct",
 		},
 		prepare_data = function(data, model)
 			data.model = "accounts/fireworks/models/" .. model
+			return data
+		end,
+	},
+	hyperbolic = { -- base models
+		url = "https://api.hyperbolic.xyz/v1/completions",
+		model_map = {
+			["llama-3.1-405b"] = "meta-llama/Meta-Llama-3.1-405B",
+			["llama-3.1-405b-fp8"] = "meta-llama/Meta-Llama-3.1-405B-FP8",
+		},
+		prepare_data = function(data, _)
+			local prompt = ""
+			for _, message in ipairs(data.messages) do
+				if message.content ~= nil then
+					prompt = prompt .. message.content .. "\n\n"
+				end
+			end
+			data.prompt = prompt
+			data.messages = nil
+			data.max_tokens = config.opts.inline.max_tokens
 			return data
 		end,
 	},
@@ -234,7 +251,7 @@ local function handle_stream_chunk(chunk, bufnr, raw_chunks)
 		end
 
 		local chunk_content
-		if chunk_data.choices ~= nil then -- openai/groq api
+		if chunk_data.choices ~= nil then -- openai-style api
 			chunk_content = chunk_data.choices[1].delta.content
 		elseif chunk_data.type == "content_block_delta" then -- anthropic api
 			chunk_content = chunk_data.delta.text
@@ -270,15 +287,20 @@ end
 
 M.request = function(messages, model, temp, bufnr, on_complete, stream_response, on_chunk)
 	local args = get_curl_args(messages, model, temp, stream_response or false)
+	-- print("request")
+	-- P(args)
 
 	if stream_response then
 		local raw_chunks = {}
 		local on_stdout_chunk = function(chunk)
+			-- print("on_stdout_chunk")
+			-- P(chunk)
 			if vim.g.chat_stop_generation then
 				vim.g.chat_stop_generation = false
 				return true
 			end
 			if on_chunk then
+				-- print("using provided on_chunk function")
 				on_chunk(nil, chunk)
 			else
 				handle_stream_chunk(chunk, bufnr, raw_chunks)
@@ -293,6 +315,7 @@ M.request = function(messages, model, temp, bufnr, on_complete, stream_response,
 	else
 		local on_stdout = function(response_body)
 			local ok, response = pcall(vim.json.decode, response_body)
+			-- P(response)
 			if not ok then
 				on_complete("Failed to parse response JSON: " .. response_body)
 				return

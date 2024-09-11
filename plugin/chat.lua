@@ -99,33 +99,34 @@ cmd("ChatInline", function(opts)
 	else
 		-- send the whole file up to the cursor line
 		context = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line("."), true)
-        context = table.concat(context, "\n")
-		vim.cmd("normal! o")
+		context = table.concat(context, "\n")
 	end
 
-	if not replace then
-        context = "```" .. vim.bo.filetype .. "\n" .. context .. "\n```"
+	local model
+	if opts.args == "base" then
+		model = "base"
+	else
+		model = "instruct"
 	end
 
-	require("chat").inline(context)
+	require("chat").inline(context, model)
 end, {
 	nargs = "?",
 	complete = function()
-		return { "replace" }
+		return { "replace", "base" }
 	end,
 })
 
 cmd("ChatSetupBuffer", function()
-    require("chat").setup_buffer()
+	require("chat").setup_buffer()
 end, {})
 
-
 cmd("ChatStop", function()
-    require("chat").stop()
+	require("chat").stop()
 end, {})
 
 cmd("ChatToggleFormatting", function()
-    require("chat").toggle_formatting()
+	require("chat").toggle_formatting()
 end, {})
 
 -------------------------------------------------------------------------------
@@ -163,4 +164,12 @@ autocmd("BufWritePre", {
 	callback = function()
 		require("chat.core").format_chat(vim.api.nvim_get_current_buf())
 	end,
+})
+
+autocmd("VimResized", {
+	group = chat_group,
+	pattern = "*.chat",
+    callback = function()
+    vim.opt.textwidth = math.floor(vim.api.nvim_win_get_width(0) - 10)
+    end,
 })

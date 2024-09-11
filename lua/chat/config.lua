@@ -22,6 +22,9 @@ M.defaults = function()
 			topology = function()
 				return os.getenv("TOPOLOGY_API_KEY") or vim.fn.input("Topology API Key: ")
 			end,
+			hyperbolic = function()
+				return os.getenv("HYPERBOLIC_API_KEY") or vim.fn.input("Hyperbolic API Key: ")
+			end,
 			openrouter = function()
 				return os.getenv("OPENROUTER_API_KEY") or vim.fn.input("OpenRouter API Key: ")
 			end,
@@ -62,17 +65,19 @@ Answer concisely and when asked for code avoid unnecessary verbose explanation.
 			direction = "right", -- left, right, top, bottom, center
 		},
 		inline = {
-			model = "claude-3.5-sonnet",
-			temp = 0, -- model temperature
+			base_model = "llama-3.1-405b",
+			instruct_model = "claude-3.5-sonnet",
 			system_message = [[You are an expert programmer working alongside an expert colleague. 
 You will be given code snippets. 
-Treat comments that don't have accompanying code as instructions on what needs to be done. 
+Interpret comments as instructions on code that needs to be written if there isn't already code addressing the comment or if the comment requests refactoring.
 Only respond with code, make all comments and explanation as code comments.
 Do not respond or acknowledge the request in any way, just start coding.
 Continue where the code leaves off, do not repeat existing code unless it needs to be changed.
-There is no need to fence the code with triple backticks ```, just start writing code.
+Just start writing code, do not format as markdown or include any triple backticks.
 Only do exactly as instructed, do not add code that was not explicitly asked for or described. Do not add more functionality than is asked for.
 ]],
+			temp = 0.3, -- model temperature
+			max_tokens = 512, -- max length of response
 		},
 	}
 end

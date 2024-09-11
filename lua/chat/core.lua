@@ -9,7 +9,7 @@ M.setup_buffer = function(bufnr)
 	-- keymaps
 	vim.keymap.set("n", config.opts.keymap.send_message, M.send_message, key_opts)
 	vim.keymap.set("n", config.opts.keymap.yank_code, M.yank_code, key_opts)
-    vim.keymap.set("n", config.opts.keymap.stop_generation, M.stop_generation, key_opts)
+	vim.keymap.set("n", config.opts.keymap.stop_generation, M.stop_generation, key_opts)
 
 	-- global
 	if config.opts.keymap.paste_code ~= "" then
@@ -312,13 +312,16 @@ local function generate_title(_messages, bufnr)
 	local messages = {
 		{ role = "system", content = "Write a short (1-5 words) title for this conversation:" },
 		_messages[2],
-		{ role = "user", content = "Write a short (1-5 words) title for this conversation based on the previous message. Only write the title, do not respond to the query." },
+		{
+			role = "user",
+			content = "Write a short (1-5 words) title for this conversation based on the previous message. Only write the title, do not respond to the query.",
+		},
 	}
 
 	local on_complete = function(err, res)
 		if err then
 			vim.api.nvim_err_writeln("[chat.nvim] Error generating conversation title: " .. err)
-        elseif not res then
+		elseif not res then
 			return
 		else
 			local title = res.choices[1].message.content
@@ -381,9 +384,9 @@ M.delete = function()
 end
 
 M.format_chat = function(bufnr)
-    if vim.g.chat_formatting == nil then
-        vim.g.chat_formatting = config.opts.auto_format
-    end
+	if vim.g.chat_formatting == nil then
+		vim.g.chat_formatting = config.opts.auto_format
+	end
 
 	if not vim.g.chat_formatting then
 		return
@@ -416,7 +419,7 @@ M.format_chat = function(bufnr)
 				range_start = i + 1
 
 			-- handle list items
-			elseif line:match("^%s*%d+%. ") or line:match("^%s*- ") then
+			elseif line:match("^%s*%d+%. ") or line:match("^%s*- ") or line:match("^%s*%* ") then
 				format_sections[#format_sections + 1] = { range_start, i - 1 }
 				range_start = i
 				in_list_item = true
@@ -495,7 +498,7 @@ M.yank_code = function()
 	end
 end
 
-M.inline = function(context)
+M.inline = function(context, _model)
 	local bufnr = vim.api.nvim_get_current_buf()
 	local cursor = vim.api.nvim_win_get_cursor(0)
 	local row, col = cursor[1] - 1, cursor[2]
@@ -504,6 +507,7 @@ M.inline = function(context)
 		{ role = "system", content = config.opts.inline.system_message },
 		{ role = "user", content = context },
 	}
+  -- P(messages)
 
 	local on_chunk = function(err, chunk)
 		if err then
@@ -518,9 +522,16 @@ M.inline = function(context)
 					goto continue
 				end
 
+				-- print("on_chunk")
+				-- P(chunk_data)
+
 				local chunk_content
-				if chunk_data.choices ~= nil then -- openai/groq api
-					chunk_content = chunk_data.choices[1].delta.content
+				if chunk_data.choices ~= nil then -- openai-style api
+					if chunk_data.choices[1].delta ~= nil then
+						chunk_content = chunk_data.choices[1].delta.content
+          else -- base model
+            chunk_content = chunk_data.choices[1].text
+					end
 				elseif chunk_data.type == "content_block_delta" then -- anthropic api
 					chunk_content = chunk_data.delta.text
 				end
@@ -554,12 +565,19 @@ M.inline = function(context)
 		end
 	end
 
-	api.request(messages, config.opts.inline.model, config.opts.inline.temp, bufnr, on_complete, true, on_chunk)
+    local model
+    if _model == "base" then
+        model = config.opts.inline.base_model
+    else
+        model = config.opts.inline.instruct_model
+    end
+
+	api.request(messages, model, config.opts.inline.temp, bufnr, on_complete, true, on_chunk)
 end
 
 M.stop_generation = function()
-    vim.g.chat_stop_generation = true
-    print("[chat.nvim] Stopping generation")
+	vim.g.chat_stop_generation = true
+	print("[chat.nvim] Stopping generation")
 end
 
 return M
