@@ -411,10 +411,10 @@ M.format_chat = function(bufnr)
                 end
             end
 
-			if line:match("```") then
-				if not line:match("^%s*```") then
-					fix_backticks[#fix_backticks + 1] = i
-				end
+			if line:match("^%s*```[^`]*$") then
+				-- if not line:match("^%s*```") then
+				-- 	fix_backticks[#fix_backticks + 1] = i
+				-- end
 
 				if not in_code_block then
 					format_sections[#format_sections + 1] = { range_start, i - 1 }
@@ -445,21 +445,21 @@ M.format_chat = function(bufnr)
 		end
 
 		-- delete the backticks from that line, and insert them in a line below
-		for _, line in ipairs(fix_backticks) do
-			local line_content = buf_lines[line]
-			local new_content = line_content:gsub("```", "")
-			vim.api.nvim_buf_set_lines(bufnr, line - 1, line, false, { new_content })
-			-- insert a new line below, with backticks. do not overwrite existing content make a new line
-			vim.cmd("normal! " .. line .. "Go```")
-
-			-- fix all the ranges after this line to account for the new line
-			for _, section in ipairs(format_sections) do
-				if section[1] >= line then
-					section[1] = section[1] + 1
-					section[2] = section[2] + 1
-				end
-			end
-		end
+		-- for _, line in ipairs(fix_backticks) do
+		-- 	local line_content = buf_lines[line]
+		-- 	local new_content = line_content:gsub("```", "")
+		-- 	vim.api.nvim_buf_set_lines(bufnr, line - 1, line, false, { new_content })
+		-- 	-- insert a new line below, with backticks. do not overwrite existing content make a new line
+		-- 	vim.cmd("normal! " .. line .. "Go```")
+		--
+		-- 	-- fix all the ranges after this line to account for the new line
+		-- 	for _, section in ipairs(format_sections) do
+		-- 		if section[1] >= line then
+		-- 			section[1] = section[1] + 1
+		-- 			section[2] = section[2] + 1
+		-- 		end
+		-- 	end
+		-- end
 
 		-- format in reverse order so line numbers don't change
 		for i = #format_sections, 1, -1 do
