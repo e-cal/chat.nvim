@@ -11,6 +11,14 @@ local function get_api_key(provider)
 	return api_key
 end
 
+local function default_headers(provider)
+	local api_key = get_api_key(provider)
+	return {
+		["Content-Type"] = "application/json",
+		["Authorization"] = "Bearer " .. api_key,
+	}
+end
+
 --[[
 provider = {
     url:  string provider chat completions url
@@ -50,10 +58,10 @@ local providers = {
 			return data
 		end,
 	},
-	deepseek = {
-		url = "https://api.deepseek.com/chat/completions",
-		models = "deepseek",
-	},
+	-- deepseek = {
+	-- 	url = "https://api.deepseek.com/chat/completions",
+	-- 	models = "deepseek",
+	-- },
 	groq = {
 		url = "https://api.groq.com/openai/v1/chat/completions",
 		model_map = {
@@ -90,11 +98,21 @@ local providers = {
 			return data
 		end,
 	},
-	hyperbolic = { -- base models
+	hyperbolic = {
+		url = "https://api.hyperbolic.xyz/v1/chat/completions",
+		model_map = {
+			["llama-405b"] = "meta-llama/Meta-Llama-3.1-405B-Instruct",
+			["llama-3.1-405b"] = "meta-llama/Meta-Llama-3.1-405B-Instruct",
+			["llama-3.1-70b-bf16"] = "meta-llama/Meta-Llama-3.1-70B-Instruct",
+			["llama-3.1-8b-bf16"] = "meta-llama/Meta-Llama-3.1-8B-Instruct",
+			["deepseek"] = "deepseek-ai/DeepSeek-V2.5",
+		},
+    },
+	hyperbolic_base = {
 		url = "https://api.hyperbolic.xyz/v1/completions",
 		model_map = {
-			["llama-3.1-405b"] = "meta-llama/Meta-Llama-3.1-405B",
-			["llama-3.1-405b-fp8"] = "meta-llama/Meta-Llama-3.1-405B-FP8",
+			["llama-3.1-405b-base"] = "meta-llama/Meta-Llama-3.1-405B",
+			["llama-3.1-405b-fp8-base"] = "meta-llama/Meta-Llama-3.1-405B-FP8",
 		},
 		prepare_data = function(data, _)
 			local prompt = ""
@@ -108,19 +126,21 @@ local providers = {
 			data.max_tokens = config.opts.inline.max_tokens
 			return data
 		end,
+		headers = function()
+            return default_headers("hyperbolic")
+        end
 	},
 	openrouter = { -- fallback
 		url = "https://openrouter.ai/api/v1/chat/completions",
+        model_map = {
+			["openrouter/llama-3.1-405b"] = "meta-llama/llama-3.1-405b-instruct",
+            ["nous-hermes"] = "nousresearch/hermes-3-llama-3.1-405b",
+            ["o1"] = "openai/o1-preview",
+            ["o1-mini"] = "openai/o1-mini",
+        },
 	},
 }
 
-local function default_headers(provider)
-	local api_key = get_api_key(provider)
-	return {
-		["Content-Type"] = "application/json",
-		["Authorization"] = "Bearer " .. api_key,
-	}
-end
 
 local function exec(cmd, args, on_stdout, on_complete)
 	local stdout = vim.loop.new_pipe()
@@ -242,7 +262,7 @@ end
 local function handle_stream_chunk(chunk, bufnr, raw_chunks)
 	for chunk_json in chunk:gmatch("[^\n]+") do
 		local raw_json = string.gsub(chunk_json, "^data: ", "")
-
+        -- print(raw_json)
 		table.insert(raw_chunks, raw_json)
 
 		local ok, chunk_data = pcall(vim.json.decode, raw_json)

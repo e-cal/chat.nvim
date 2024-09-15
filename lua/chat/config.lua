@@ -38,7 +38,7 @@ Your colleague will ask you various questions about their code and ask you to as
 Answer concisely and when asked for code avoid unnecessary verbose explanation.
 ]],
 		},
-		title_model = "meta-llama/llama-3.1-8b-instruct:free", -- model used to generate chat titles
+		title_model = "meta-llama/llama-3.1-8b-instruct", -- model used to generate chat titles
 		auto_scroll = true, -- scroll to bottom of chat when response is finished
 		auto_format = true, -- automatically format the chat on save
 		wrap = false, -- enable line wrap (j/k are bound to gj and gk in the chat buffer so line wrap doesn't suck)
@@ -65,7 +65,7 @@ Answer concisely and when asked for code avoid unnecessary verbose explanation.
 			direction = "right", -- left, right, top, bottom, center
 		},
 		inline = {
-			base_model = "llama-3.1-405b",
+			base_model = "llama-3.1-405b-base",
 			instruct_model = "claude-3.5-sonnet",
 			system_message = [[You are an expert programmer working alongside an expert colleague. 
 You will be given code snippets. 
