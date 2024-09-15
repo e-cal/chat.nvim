@@ -82,39 +82,48 @@ cmd("ChatResize", function(opts)
 end, { nargs = 1 })
 
 cmd("ChatInline", function(opts)
-	local replace = opts.args == "replace"
 	local context
 	if vim.fn.mode():match("[vV]") then
 		vim.cmd('silent normal! "vy')
 		context = vim.fn.getreg("v")
-
-		-- only allow replacing with a visual selection
-		if replace then
-			vim.cmd("normal! gv")
-			vim.cmd('normal! "_d')
-		else
-			vim.cmd("normal! `>")
-			vim.cmd("normal! o")
-		end
+        vim.cmd("normal! `>")
+        vim.cmd("normal! o")
 	else
 		-- send the whole file up to the cursor line
 		context = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line("."), true)
 		context = table.concat(context, "\n")
 	end
 
-	local model
-	if opts.args == "base" then
-		model = "base"
-	else
-		model = "instruct"
-	end
+	local model = "default"
+    if opts.args and opts.args ~= "" then
+        model = opts.args
+    end
 
 	require("chat").inline(context, model)
 end, {
-	nargs = "?",
-	complete = function()
-		return { "replace", "base" }
-	end,
+	nargs = 1,
+})
+
+cmd("ChatReplace", function(opts)
+	local context
+	if vim.fn.mode():match("[vV]") then
+		vim.cmd('silent normal! "vy')
+		context = vim.fn.getreg("v")
+        vim.cmd("normal! gv")
+        vim.cmd('normal! "_d')
+	else
+        print("not in visual mode")
+        return
+	end
+
+	local model = "default"
+    if opts.args and opts.args ~= "" then
+        model = opts.args
+    end
+
+	require("chat").replace(context, model)
+end, {
+	nargs = 1,
 })
 
 cmd("ChatSetupBuffer", function()

@@ -402,14 +402,14 @@ M.format_chat = function(bufnr)
 		local fix_backticks = {}
 
 		for i, line in ipairs(buf_lines) do
-            -- skip delimiter lines
-            for _, delimiter in pairs(config.opts.delimiters) do
-                if line:match("^%s*" .. delimiter:gsub("[%^$()%.%*%+%-?[%]]", "%%%1")) then
-                    format_sections[#format_sections + 1] = { range_start, i - 1 }
-                    range_start = i + 1
-                    goto continue
-                end
-            end
+			-- skip delimiter lines
+			for _, delimiter in pairs(config.opts.delimiters) do
+				if line:match("^%s*" .. delimiter:gsub("[%^$()%.%*%+%-?[%]]", "%%%1")) then
+					format_sections[#format_sections + 1] = { range_start, i - 1 }
+					range_start = i + 1
+					goto continue
+				end
+			end
 
 			if line:match("^%s*```[^`]*$") then
 				-- if not line:match("^%s*```") then
@@ -437,7 +437,7 @@ M.format_chat = function(bufnr)
 				range_start = i
 				in_list_item = false
 			end
-            ::continue::
+			::continue::
 		end
 
 		if range_start <= #buf_lines then
@@ -517,7 +517,7 @@ M.inline = function(context, _model)
 		{ role = "system", content = config.opts.inline.system_message },
 		{ role = "user", content = context },
 	}
-  -- P(messages)
+	-- P(messages)
 
 	local on_chunk = function(err, chunk)
 		if err then
@@ -539,8 +539,8 @@ M.inline = function(context, _model)
 				if chunk_data.choices ~= nil then -- openai-style api
 					if chunk_data.choices[1].delta ~= nil then
 						chunk_content = chunk_data.choices[1].delta.content
-          else -- base model
-            chunk_content = chunk_data.choices[1].text
+					else -- base model
+						chunk_content = chunk_data.choices[1].text
 					end
 				elseif chunk_data.type == "content_block_delta" then -- anthropic api
 					chunk_content = chunk_data.delta.text
@@ -575,12 +575,14 @@ M.inline = function(context, _model)
 		end
 	end
 
-    local model
-    if _model == "base" then
-        model = config.opts.inline.base_model
-    else
-        model = config.opts.inline.instruct_model
-    end
+	local model
+	if _model == "default" then
+		model = config.opts.inline.instruct_model
+	elseif _model == "base" then
+		model = config.opts.inline.base_model
+	else
+		model = _model
+	end
 
 	api.request(messages, model, config.opts.inline.temp, bufnr, on_complete, true, on_chunk)
 end
