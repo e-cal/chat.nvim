@@ -32,7 +32,7 @@ M.defaults = function()
 		default = { -- default values for chat parameters (overwritten if changed inline in chat)
 			title = "# New Chat",
 			model = "claude-3.5-sonnet", -- model names will auto add the suffix if needed
-			temp = 0, -- model temperature
+			temp = 0.8, -- model temperature
 			system_message = [[You are an expert programmer working alongside an expert colleague. 
 Your colleague will ask you various questions about their code and ask you to assist with some coding tasks. 
 Answer concisely and when asked for code avoid unnecessary verbose explanation.

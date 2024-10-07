@@ -56,20 +56,14 @@ cmd("ChatNew", function()
 end, {})
 
 cmd("ChatOpen", function(opts)
-	local args = vim.split(opts.args, " ")
-	local popup = false
-	for _, arg in ipairs(args) do
-		if arg == "popup" then
-			popup = true
-			break
-		end
-	end
-	require("chat").open(popup)
+	local filename = opts.args ~= "" and opts.args or nil
+	require("chat").open(filename)
 end, {
 	nargs = "?",
-	complete = function()
-		return { "popup" }
-	end,
+    -- TODO: get the list of chat files using config for path
+	-- complete = function()
+	-- 	return vim.fn.readdir()
+	-- end,
 })
 
 cmd("ChatDelete", function()
@@ -101,7 +95,7 @@ cmd("ChatInline", function(opts)
 
 	require("chat").inline(context, model)
 end, {
-	nargs = 1,
+	nargs = "?",
 })
 
 cmd("ChatReplace", function(opts)

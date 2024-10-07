@@ -127,7 +127,7 @@ M.load_last_chat = function(selection, ft)
 	return bufnr
 end
 
-M.open = function(popup)
+M.open = function(filename, popup)
 	if popup then
 		local popup_win = require("chat.popup")
 		if not popup_win.is_open() then
@@ -137,6 +137,11 @@ M.open = function(popup)
 			popup_win.focus()
 		end
 	end
+
+    if filename and filename ~= "" then
+        vim.cmd("edit " .. config.opts.dir .. "/" .. filename)
+        return
+    end
 
 	local function call_telescope()
 		local previewers = require("telescope.previewers")

@@ -315,6 +315,7 @@ M.request = function(messages, model, temp, bufnr, on_complete, stream_response,
 		local on_stdout_chunk = function(chunk)
 			-- print("on_stdout_chunk")
 			-- P(chunk)
+
 			if vim.g.chat_stop_generation then
 				vim.g.chat_stop_generation = false
 				return true

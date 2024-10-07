@@ -31,8 +31,8 @@ M.new_chat = function()
 	chat.create_new_chat()
 end
 
-M.open = function(as_popup)
-	chat.open(as_popup)
+M.open = function(filename)
+	chat.open(filename, false)
 end
 
 M.delete = function()
