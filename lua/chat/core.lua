@@ -308,6 +308,7 @@ local function parse_messages(bufnr)
                         local file_content = file:read("*a")
                         local file_extension = filename:match("%.([^%.]+)$") or ""
                         file:close()
+                        table.insert(content, filename)
                         table.insert(content, "```"..file_extension)
                         for file_line in file_content:gmatch("[^\r\n]+") do
                             table.insert(content, file_line)
