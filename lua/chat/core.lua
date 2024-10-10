@@ -329,7 +329,7 @@ local function parse_messages(bufnr)
 		table.insert(messages, { role = role, content = table.concat(content, "\n") })
 	end
 
-    P(messages)
+    -- P(messages)
 
 	return messages, model, temp
 end
