@@ -298,7 +298,25 @@ local function parse_messages(bufnr)
 
 			-- add line to current message content
 			elseif role and (#content > 0 or line ~= "") then
-				table.insert(content, line)
+                if line:find("^" .. config.opts.delimiters.file) then -- insert file
+                    local filename = line:sub(config.opts.delimiters.file:len() + 1)
+                    -- insert the contents of the file
+                    local file = io.open(filename, "r")
+                    if not file then
+                        print("[chat.nvim] Error opening file: " .. filename .. ". Not added to context.")
+                    else
+                        local file_content = file:read("*a")
+                        local file_extension = filename:match("%.([^%.]+)$") or ""
+                        file:close()
+                        table.insert(content, "```"..file_extension)
+                        for file_line in file_content:gmatch("[^\r\n]+") do
+                            table.insert(content, file_line)
+                        end
+                        table.insert(content, "```")
+                    end
+                else -- normal line
+                    table.insert(content, line)
+                end
 			end
 		end
 	end
@@ -309,6 +327,8 @@ local function parse_messages(bufnr)
 		end
 		table.insert(messages, { role = role, content = table.concat(content, "\n") })
 	end
+
+    P(messages)
 
 	return messages, model, temp
 end

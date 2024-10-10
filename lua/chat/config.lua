@@ -57,8 +57,9 @@ Answer concisely and when asked for code avoid unnecessary verbose explanation.
 			temp = "> Temperature: ",
 			system = "> System Message",
 			chat = "## Chat",
-			user = "> User",
-			assistant = "> Assistant",
+			user = "### User",
+			assistant = "### Assistant",
+            file = "> @",
 		},
 		popup = {
 			size = 40, -- percent of screen
