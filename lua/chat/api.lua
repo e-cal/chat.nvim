@@ -37,10 +37,20 @@ local providers = {
 		url = "https://api.anthropic.com/v1/messages",
 		models = "claude",
 		model_map = {
+            -- 3 aliases
 			["claude-3-haiku"] = "claude-3-haiku-20240307",
 			["claude-3-sonnet"] = "claude-3-sonnet-20240229",
 			["claude-3-opus"] = "claude-3-opus-20240229",
+            -- 3.5 aliases
 			["claude-3.5-sonnet"] = "claude-3-5-sonnet-20240620",
+            ["claude-3.5-sonnet-new"] = "claude-3-5-sonnet-20241022",
+            ["claude-3.5-sonnet-latest"] = "claude-3-5-sonnet-latest",
+			-- ["claude-3.5-haiku"] = "claude-3-5-haiku-latest",
+            -- versionless aliases
+			["claude"] = "claude-3-5-sonnet-20240620",
+			["sonnet"] = "claude-3-5-sonnet-20240620",
+			["sonnet-new"] = "claude-3-5-sonnet-20241022",
+			["sonnet-latest"] = "claude-3-5-sonnet-latest",
 		},
 		headers = function()
 			return {
