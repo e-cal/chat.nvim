@@ -29,6 +29,19 @@ provider = {
 }
 ]]
 local providers = {
+    entropix = {
+        url = "127.0.0.1:1337/v1/chat/completions",
+        model_map = {
+            ["entropix"] = "llama-1b",
+            ["llama-1b"] = "llama-1b",
+            ["smollm"] = "smollm",
+        },
+		headers = function()
+			return {
+				["Content-Type"] = "application/json",
+			}
+		end,
+    },
 	openai = {
 		url = "https://api.openai.com/v1/chat/completions",
 		models = "gpt",
@@ -222,7 +235,7 @@ end
 
 -- Request logic
 
-local function get_curl_args(messages, model, temp, stream)
+local function get_curl_args(messages, model, temp, save_path, stream)
 	local provider_name = get_provider(model)
 	local provider = providers[provider_name]
 	local url = provider.url
@@ -248,6 +261,9 @@ local function get_curl_args(messages, model, temp, stream)
 		messages = messages,
 		model = model,
 	}
+    if save_path then
+        data.save_path = save_path
+    end
 
 	if provider.prepare_data then
 		data = provider.prepare_data(data, model)
@@ -263,6 +279,7 @@ local function get_curl_args(messages, model, temp, stream)
 		table.insert(curl_args, string.format("%s: %s", k, v))
 	end
 
+    P(data)
 	table.insert(curl_args, "--data")
 	table.insert(curl_args, vim.json.encode(data))
 
@@ -315,10 +332,18 @@ local function handle_complete(err, raw_chunks, on_complete)
 	on_complete(err, nil)
 end
 
-M.request = function(messages, model, temp, bufnr, on_complete, stream_response, on_chunk)
-	local args = get_curl_args(messages, model, temp, stream_response or false)
+-- M.request = function(messages, model, temp, save_path, bufnr, on_complete, stream_response, on_chunk)
+M.request = function(params)
+    assert(params.messages, "messages is required")
+    assert(params.model, "model is required")
+    assert(params.temp, "temp is required")
+	local args = get_curl_args(params.messages, params.model, params.temp, params.save_path, params.stream_response or false)
 	-- print("request")
 	-- P(args)
+    local stream_response = params.stream_response or false
+    local bufnr = params.bufnr
+    local on_complete = params.on_complete
+    local on_chunk = params.on_chunk
 
 	if stream_response then
 		local raw_chunks = {}

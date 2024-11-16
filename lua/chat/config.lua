@@ -60,6 +60,7 @@ Answer concisely and when asked for code avoid unnecessary verbose explanation.
 			user = "### User",
 			assistant = "### Assistant",
             file = "> @",
+            entropix_save_path = "> Save: ",
 		},
 		popup = {
 			size = 40, -- percent of screen

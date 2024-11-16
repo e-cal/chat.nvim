@@ -138,10 +138,10 @@ M.open = function(filename, popup)
 		end
 	end
 
-    if filename and filename ~= "" then
-        vim.cmd("edit " .. config.opts.dir .. "/" .. filename)
-        return
-    end
+	if filename and filename ~= "" then
+		vim.cmd("edit " .. config.opts.dir .. "/" .. filename)
+		return
+	end
 
 	local function call_telescope()
 		local previewers = require("telescope.previewers")
@@ -241,6 +241,7 @@ local function parse_messages(bufnr)
 	local content = {}
 	local model = config.opts.default.model
 	local temp = config.opts.default.temp
+	local save_path = nil
 
 	local in_system = false
 	local sys_message = {}
@@ -253,6 +254,8 @@ local function parse_messages(bufnr)
 				model = line:sub(config.opts.delimiters.model:len() + 1)
 			elseif line:find("^" .. config.opts.delimiters.temp) then
 				temp = tonumber(line:sub(config.opts.delimiters.temp:len() + 1))
+			elseif line:find("^" .. config.opts.delimiters.entropix_save_path) then
+				save_path = line:sub(config.opts.delimiters.entropix_save_path:len() + 1)
 			else
 				in_chat = line == config.opts.delimiters.chat
 
@@ -298,26 +301,26 @@ local function parse_messages(bufnr)
 
 			-- add line to current message content
 			elseif role and (#content > 0 or line ~= "") then
-                if line:find("^" .. config.opts.delimiters.file) then -- insert file
-                    local filename = line:sub(config.opts.delimiters.file:len() + 1)
-                    -- insert the contents of the file
-                    local file = io.open(filename, "r")
-                    if not file then
-                        print("[chat.nvim] Error opening file: " .. filename .. ". Not added to context.")
-                    else
-                        local file_content = file:read("*a")
-                        local file_extension = filename:match("%.([^%.]+)$") or ""
-                        file:close()
-                        table.insert(content, filename)
-                        table.insert(content, "```"..file_extension)
-                        for file_line in file_content:gmatch("[^\r\n]+") do
-                            table.insert(content, file_line)
-                        end
-                        table.insert(content, "```")
-                    end
-                else -- normal line
-                    table.insert(content, line)
-                end
+				if line:find("^" .. config.opts.delimiters.file) then -- insert file
+					local filename = line:sub(config.opts.delimiters.file:len() + 1)
+					-- insert the contents of the file
+					local file = io.open(filename, "r")
+					if not file then
+						print("[chat.nvim] Error opening file: " .. filename .. ". Not added to context.")
+					else
+						local file_content = file:read("*a")
+						local file_extension = filename:match("%.([^%.]+)$") or ""
+						file:close()
+						table.insert(content, filename)
+						table.insert(content, "```" .. file_extension)
+						for file_line in file_content:gmatch("[^\r\n]+") do
+							table.insert(content, file_line)
+						end
+						table.insert(content, "```")
+					end
+				else -- normal line
+					table.insert(content, line)
+				end
 			end
 		end
 	end
@@ -329,9 +332,9 @@ local function parse_messages(bufnr)
 		table.insert(messages, { role = role, content = table.concat(content, "\n") })
 	end
 
-    -- P(messages)
+	-- P(messages)
 
-	return messages, model, temp
+	return messages, model, temp, save_path
 end
 
 local function generate_title(_messages, bufnr)
@@ -356,12 +359,12 @@ local function generate_title(_messages, bufnr)
 		end
 	end
 
-	api.request(messages, config.opts.title_model, 0, bufnr, on_complete)
+	api.request({ messages = messages, model = config.opts.title_model, temp = 0, bufnr = bufnr, on_complete = on_complete })
 end
 
 M.send_message = function()
 	local bufnr = vim.api.nvim_get_current_buf()
-	local messages, model, temp = parse_messages(bufnr)
+	local messages, model, temp, save_path = parse_messages(bufnr)
 
 	if messages[#messages].role == "user" and messages[#messages].content == "" then
 		print("[chat.nvim] Skipping empty user message")
@@ -399,7 +402,15 @@ M.send_message = function()
 		vim.cmd("silent w!")
 	end
 
-	api.request(messages, model, temp, bufnr, on_complete, true)
+	api.request({
+		messages = messages,
+		model = model,
+		temp = temp,
+		save_path = save_path,
+		bufnr = bufnr,
+		on_complete = on_complete,
+		stream_response = true,
+	})
 end
 
 M.delete = function()
@@ -610,7 +621,15 @@ M.inline = function(context, _model)
 		model = _model
 	end
 
-	api.request(messages, model, config.opts.inline.temp, bufnr, on_complete, true, on_chunk)
+	api.request({
+		messages = messages,
+		model = model,
+		temp = config.opts.inline.temp,
+		bufnr = bufnr,
+		on_complete = on_complete,
+		stream_response = true,
+		on_chunk = on_chunk,
+	})
 end
 
 M.stop_generation = function()
