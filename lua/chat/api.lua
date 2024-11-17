@@ -279,7 +279,7 @@ local function get_curl_args(messages, model, temp, save_path, stream)
 		table.insert(curl_args, string.format("%s: %s", k, v))
 	end
 
-    P(data)
+    -- P(data)
 	table.insert(curl_args, "--data")
 	table.insert(curl_args, vim.json.encode(data))
 

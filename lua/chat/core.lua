@@ -255,7 +255,14 @@ local function parse_messages(bufnr)
 			elseif line:find("^" .. config.opts.delimiters.temp) then
 				temp = tonumber(line:sub(config.opts.delimiters.temp:len() + 1))
 			elseif line:find("^" .. config.opts.delimiters.entropix_save_path) then
-				save_path = line:sub(config.opts.delimiters.entropix_save_path:len() + 1)
+                -- make it substitute "./" with the current directory
+                save_path = line:sub(config.opts.delimiters.entropix_save_path:len() + 1)
+
+                -- Get the current directory
+                local current_dir = vim.fn.getcwd()
+
+                -- Substitute "./" with the current directory
+                save_path = save_path:gsub("^%./", current_dir .. "/")
 			else
 				in_chat = line == config.opts.delimiters.chat
 
