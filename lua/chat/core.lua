@@ -267,7 +267,26 @@ local function parse_messages(bufnr)
 				in_chat = line == config.opts.delimiters.chat
 
 				if in_system and not in_chat and (#sys_message > 0 or line ~= "") then
-					table.insert(sys_message, line)
+                    if line:find("^" .. config.opts.delimiters.file) then
+                        local filename = line:sub(config.opts.delimiters.file:len() + 1)
+                        print("[chat.nvim] inserting file: " .. filename)
+                        local file = io.open(filename, "r")
+                        if not file then
+                            print("[chat.nvim] error opening file: " .. filename)
+                        else
+                            local file_content = file:read("*a")
+                            local file_extension = filename:match("%.([^%.]+)$") or ""
+                            file:close()
+                            table.insert(sys_message, filename)
+                            table.insert(sys_message, "```" .. file_extension)
+                            for file_line in file_content:gmatch("[^\r\n]+") do
+                                table.insert(sys_message, file_line)
+                            end
+                            table.insert(sys_message, "```")
+                        end
+                    else
+                        table.insert(sys_message, line)
+                    end
 				end
 
 				if in_chat then
@@ -281,7 +300,7 @@ local function parse_messages(bufnr)
 					end
 				end
 			end
-		else
+		else -- in chat
 			-- start user message
 			if line:find("^" .. config.opts.delimiters.user) then
 				if role then -- save previous (assistant) message
@@ -310,10 +329,11 @@ local function parse_messages(bufnr)
 			elseif role and (#content > 0 or line ~= "") then
 				if line:find("^" .. config.opts.delimiters.file) then -- insert file
 					local filename = line:sub(config.opts.delimiters.file:len() + 1)
+                    print("[chat.nvim] inserting file: " .. filename)
 					-- insert the contents of the file
 					local file = io.open(filename, "r")
 					if not file then
-						print("[chat.nvim] Error opening file: " .. filename .. ". Not added to context.")
+						print("[chat.nvim] error opening file: " .. filename)
 					else
 						local file_content = file:read("*a")
 						local file_extension = filename:match("%.([^%.]+)$") or ""
