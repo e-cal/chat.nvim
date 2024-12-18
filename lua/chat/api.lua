@@ -29,19 +29,19 @@ provider = {
 }
 ]]
 local providers = {
-    entropix = {
-        url = "127.0.0.1:1337/v1/chat/completions",
-        model_map = {
-            ["entropix"] = "llama-1b",
-            ["llama-1b"] = "llama-1b",
-            ["smollm"] = "smollm",
-        },
+	entropix = {
+		url = "127.0.0.1:1337/v1/chat/completions",
+		model_map = {
+			["entropix"] = "llama-1b",
+			["llama-1b"] = "llama-1b",
+			["smollm"] = "smollm",
+		},
 		headers = function()
 			return {
 				["Content-Type"] = "application/json",
 			}
 		end,
-    },
+	},
 	openai = {
 		url = "https://api.openai.com/v1/chat/completions",
 		models = "gpt",
@@ -50,16 +50,16 @@ local providers = {
 		url = "https://api.anthropic.com/v1/messages",
 		models = "claude",
 		model_map = {
-            -- 3 aliases
+			-- 3 aliases
 			["claude-3-haiku"] = "claude-3-haiku-20240307",
 			["claude-3-sonnet"] = "claude-3-sonnet-20240229",
 			["claude-3-opus"] = "claude-3-opus-20240229",
-            -- 3.5 aliases
+			-- 3.5 aliases
 			["claude-3.5-sonnet"] = "claude-3-5-sonnet-20240620",
-            ["claude-3.5-sonnet-new"] = "claude-3-5-sonnet-20241022",
-            ["claude-3.5-sonnet-latest"] = "claude-3-5-sonnet-latest",
+			["claude-3.5-sonnet-new"] = "claude-3-5-sonnet-20241022",
+			["claude-3.5-sonnet-latest"] = "claude-3-5-sonnet-latest",
 			-- ["claude-3.5-haiku"] = "claude-3-5-haiku-latest",
-            -- versionless aliases
+			-- versionless aliases
 			["claude"] = "claude-3-5-sonnet-20240620",
 			["sonnet"] = "claude-3-5-sonnet-20240620",
 			["sonnet-new"] = "claude-3-5-sonnet-20241022",
@@ -97,6 +97,14 @@ local providers = {
 			["llama-3.1-70b"] = "llama-3.1-70b-versatile",
 		},
 	},
+	cerebras = {
+		url = "https://api.cerebras.ai/v1/chat/completions",
+		model_map = {
+			["cerebras/llama-3.1-8b"] = "llama-3.1-8b",
+			["cerebras/llama-3.1-70b"] = "llama-3.1-70b",
+			["cerebras/llama-3.3-70b"] = "llama-3.3-70b",
+		},
+	},
 	topology = {
 		url = "https://topologychat.com/api/chat/completions",
 		models = "topology",
@@ -130,7 +138,7 @@ local providers = {
 			["llama-3.1-8b-bf16"] = "meta-llama/Meta-Llama-3.1-8B-Instruct",
 			["deepseek"] = "deepseek-ai/DeepSeek-V2.5",
 		},
-    },
+	},
 	hyperbolic_base = {
 		url = "https://api.hyperbolic.xyz/v1/completions",
 		model_map = {
@@ -150,20 +158,19 @@ local providers = {
 			return data
 		end,
 		headers = function()
-            return default_headers("hyperbolic")
-        end
+			return default_headers("hyperbolic")
+		end,
 	},
 	openrouter = { -- fallback
 		url = "https://openrouter.ai/api/v1/chat/completions",
-        model_map = {
+		model_map = {
 			["openrouter/llama-3.1-405b"] = "meta-llama/llama-3.1-405b-instruct",
-            ["nous-hermes"] = "nousresearch/hermes-3-llama-3.1-405b",
-            ["o1"] = "openai/o1-preview",
-            ["o1-mini"] = "openai/o1-mini",
-        },
+			["nous-hermes"] = "nousresearch/hermes-3-llama-3.1-405b",
+			["o1"] = "openai/o1-preview",
+			["o1-mini"] = "openai/o1-mini",
+		},
 	},
 }
-
 
 local function exec(cmd, args, on_stdout, on_complete)
 	local stdout = vim.loop.new_pipe()
@@ -261,9 +268,9 @@ local function get_curl_args(messages, model, temp, save_path, stream)
 		messages = messages,
 		model = model,
 	}
-    if save_path then
-        data.save_path = save_path
-    end
+	if save_path then
+		data.save_path = save_path
+	end
 
 	if provider.prepare_data then
 		data = provider.prepare_data(data, model)
@@ -279,7 +286,7 @@ local function get_curl_args(messages, model, temp, save_path, stream)
 		table.insert(curl_args, string.format("%s: %s", k, v))
 	end
 
-    -- P(data)
+	-- P(data)
 	table.insert(curl_args, "--data")
 	table.insert(curl_args, vim.json.encode(data))
 
@@ -289,7 +296,7 @@ end
 local function handle_stream_chunk(chunk, bufnr, raw_chunks)
 	for chunk_json in chunk:gmatch("[^\n]+") do
 		local raw_json = string.gsub(chunk_json, "^data: ", "")
-        -- print(raw_json)
+		-- print(raw_json)
 		table.insert(raw_chunks, raw_json)
 
 		local ok, chunk_data = pcall(vim.json.decode, raw_json)
@@ -334,16 +341,17 @@ end
 
 -- M.request = function(messages, model, temp, save_path, bufnr, on_complete, stream_response, on_chunk)
 M.request = function(params)
-    assert(params.messages, "messages is required")
-    assert(params.model, "model is required")
-    assert(params.temp, "temp is required")
-	local args = get_curl_args(params.messages, params.model, params.temp, params.save_path, params.stream_response or false)
+	assert(params.messages, "messages is required")
+	assert(params.model, "model is required")
+	assert(params.temp, "temp is required")
+	local args =
+		get_curl_args(params.messages, params.model, params.temp, params.save_path, params.stream_response or false)
 	-- print("request")
 	-- P(args)
-    local stream_response = params.stream_response or false
-    local bufnr = params.bufnr
-    local on_complete = params.on_complete
-    local on_chunk = params.on_chunk
+	local stream_response = params.stream_response or false
+	local bufnr = params.bufnr
+	local on_complete = params.on_complete
+	local on_chunk = params.on_chunk
 
 	if stream_response then
 		local raw_chunks = {}

@@ -16,6 +16,9 @@ M.defaults = function()
 			groq = function()
 				return os.getenv("GROQ_API_KEY") or vim.fn.input("Groq API Key: ")
 			end,
+			cerebras = function()
+				return os.getenv("CEREBRAS_API_KEY") or vim.fn.input("Cerebras API Key: ")
+			end,
 			fireworks = function()
 				return os.getenv("FIREWORKS_API_KEY") or vim.fn.input("Fireworks AI API Key: ")
 			end,
