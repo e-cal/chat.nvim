@@ -81,10 +81,14 @@ local providers = {
 			return data
 		end,
 	},
-	-- deepseek = {
-	-- 	url = "https://api.deepseek.com/chat/completions",
-	-- 	models = "deepseek",
-	-- },
+	deepseek = {
+		url = "https://api.deepseek.com/chat/completions",
+		model_map = {
+            ["r1"] = "deepseek-reasoner",
+            ["deepseek-v3"] = "deepseek-chat",
+            ["deepseek-chat"] = "deepseek-chat",
+        },
+	},
 	groq = {
 		url = "https://api.groq.com/openai/v1/chat/completions",
 		model_map = {
@@ -168,6 +172,7 @@ local providers = {
 			["nous-hermes"] = "nousresearch/hermes-3-llama-3.1-405b",
 			["o1"] = "openai/o1-preview",
 			["o1-mini"] = "openai/o1-mini",
+			["openrouter/r1"] = "deepseek/deepseek-r1",
 		},
 	},
 }
