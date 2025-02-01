@@ -44,11 +44,15 @@ local providers = {
 	},
 	openai = {
 		url = "https://api.openai.com/v1/chat/completions",
-		models = "gpt",
+		model_pattern = "gpt",
+        model_map = {
+            ["o1"] = "o1-2024-12-17",
+            ["o3-mini"] = "o3-mini-2025-01-31",
+        },
 	},
 	anthropic = {
 		url = "https://api.anthropic.com/v1/messages",
-		models = "claude",
+		model_pattern = "claude",
 		model_map = {
 			-- 3 aliases
 			["claude-3-haiku"] = "claude-3-haiku-20240307",
@@ -111,7 +115,7 @@ local providers = {
 	},
 	topology = {
 		url = "https://topologychat.com/api/chat/completions",
-		models = "topology",
+		model_pattern = "topology",
 		prepare_data = function(data, model)
 			-- TODO: this should be managed the same as api keys using config probably
 			local f = assert(io.open(os.getenv("HOME") .. "/.cache/clm-default-partition", "r"))
@@ -140,7 +144,6 @@ local providers = {
 			["llama-3.1-405b"] = "meta-llama/Meta-Llama-3.1-405B-Instruct",
 			["llama-3.1-70b-bf16"] = "meta-llama/Meta-Llama-3.1-70B-Instruct",
 			["llama-3.1-8b-bf16"] = "meta-llama/Meta-Llama-3.1-8B-Instruct",
-			["deepseek"] = "deepseek-ai/DeepSeek-V2.5",
 		},
 	},
 	hyperbolic_base = {
@@ -228,11 +231,11 @@ end
 local function get_provider(model)
 	for provider_name, provider_data in pairs(providers) do
 		if
-			type(provider_data.models) == "table"
-			and (provider_data.models[model] or vim.tbl_contains(vim.tbl_keys(provider_data.models), model))
+			type(provider_data.model_pattern) == "table"
+			and (provider_data.model_pattern[model] or vim.tbl_contains(vim.tbl_keys(provider_data.model_pattern), model))
 		then
 			return provider_name
-		elseif type(provider_data.models) == "string" and model:find(provider_data.models) then
+		elseif type(provider_data.model_pattern) == "string" and model:find(provider_data.model_pattern) then
 			return provider_name
 		elseif
 			provider_data.model_map
@@ -311,7 +314,8 @@ local function handle_stream_chunk(chunk, bufnr, raw_chunks)
 
 		local chunk_content
 		if chunk_data.choices ~= nil then -- openai-style api
-			chunk_content = chunk_data.choices[1].delta.content
+			local chunk_delta = chunk_data.choices[1].delta
+            chunk_content = ((not chunk_delta.content or chunk_delta.content == vim.NIL) and chunk_delta.reasoning_content) or chunk_delta.content
 		elseif chunk_data.type == "content_block_delta" then -- anthropic api
 			chunk_content = chunk_data.delta.text
 		end
