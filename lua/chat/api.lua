@@ -103,6 +103,7 @@ local providers = {
 			["gemma-7b"] = "gemma-7b-it",
 			["llama-3.1-8b"] = "llama-3.1-8b-instant",
 			["llama-3.1-70b"] = "llama-3.1-70b-versatile",
+			["groq/r1"] = "deepseek-r1-distill-llama-70b",
 		},
 	},
 	cerebras = {
@@ -176,6 +177,9 @@ local providers = {
 			["o1"] = "openai/o1-preview",
 			["o1-mini"] = "openai/o1-mini",
 			["openrouter/r1"] = "deepseek/deepseek-r1",
+			["gemini-2-pro"] = "google/gemini-2.0-pro-exp-02-05:free",
+			["gemini-flash"] = "google/gemini-2.0-flash-001",
+			["gemini-flash-thinking"] = "google/gemini-2.0-flash-thinking-exp:free",
 		},
 	},
 }
@@ -271,11 +275,13 @@ local function get_curl_args(messages, model, temp, save_path, stream)
 	end
 
 	local data = {
-		temperature = temp,
 		stream = stream,
 		messages = messages,
 		model = model,
 	}
+    if temp ~= nil then
+		data.temperature = temp
+    end
 	if save_path then
 		data.save_path = save_path
 	end
@@ -352,7 +358,7 @@ end
 M.request = function(params)
 	assert(params.messages, "messages is required")
 	assert(params.model, "model is required")
-	assert(params.temp, "temp is required")
+	-- assert(params.temp, "temp is required")
 	local args =
 		get_curl_args(params.messages, params.model, params.temp, params.save_path, params.stream_response or false)
 	-- print("request")

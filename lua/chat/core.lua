@@ -240,7 +240,7 @@ local function parse_messages(bufnr)
 	local role = nil
 	local content = {}
 	local model = config.opts.default.model
-	local temp = config.opts.default.temp
+	local temp = nil
 	local save_path = nil
 
 	local in_system = false
@@ -386,7 +386,7 @@ local function generate_title(_messages, bufnr)
 		end
 	end
 
-	api.request({ messages = messages, model = config.opts.title_model, temp = 0, bufnr = bufnr, on_complete = on_complete })
+	api.request({ messages = messages, model = config.opts.title_model, temp = 0.8, bufnr = bufnr, on_complete = on_complete })
 end
 
 M.send_message = function()
