@@ -68,7 +68,7 @@ Using lazy.nvim
 Set the model at the top of chat buffers and in the config for inline
 completions.
 
-> See the full list by looking in `lua/api.lua`
+> See the full list by looking in `lua/chat/api.lua`
 
 - **OpenAI**: all `gpt` models supported
   - use the model name as it appears in the API
@@ -86,6 +86,7 @@ completions.
 - **Fireworks AI**: `llama-3.1-405b`, `fireworks/llama-3.1-70b`, `fireworks/llama-3.1-8b`
 - **OpenRouter**: all models supported, enter model with prefix as it is on [OpenRouter](https://openrouter.ai/models)
   - e.g. `meta-llama/llama-3.1-8b-instruct:free`, `nousresearch/hermes-3-llama-3.1-70b`, `meta-llama/llama-3.1-405b`, `perplexity/llama-3.1-sonar-large-128k-online`
+- and way more! peek in `lua/chat/api.lua`
 
 ## Configuration
 
