@@ -68,6 +68,8 @@ Using lazy.nvim
 Set the model at the top of chat buffers and in the config for inline
 completions.
 
+> See the full list by looking in `lua/api.lua`
+
 - **OpenAI**: all `gpt` models supported
   - use the model name as it appears in the API
   - e.g. `gpt-3.5-turbo`, `gpt-4o`, `gpt-4`, `gpt-4-0613`
@@ -75,7 +77,7 @@ completions.
   - can use the model name with or without the date suffix
   - can use `3.5` or `3-5`
   - e.g. `claude-3.5-sonnet`, `claude-3-5-sonnet`, `claude-3-opus`, `claude-3-haiku-20240307`
-- **DeepSeek**: `deepseek-chat` (DeepSeek-V2-062) and `deepseek-coder` (DeepSeek-Coder-V2-0724)
+- **DeepSeek**: `r1` and `deepseek-chat`
 - **Topology**: `topology-tiny`, `topology-small`, and `topology-medium`
 - **Groq**: all models supported
   - can use the model name with or without the suffix (date/type)
