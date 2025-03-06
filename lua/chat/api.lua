@@ -59,15 +59,19 @@ local providers = {
 			["claude-3-sonnet"] = "claude-3-sonnet-20240229",
 			["claude-3-opus"] = "claude-3-opus-20240229",
 			-- 3.5 aliases
+            ["claude-3.5-haiku"] = "claude-3-5-haiku-20241022",
+            ["claude-3.5-haiku-latest"] = "claude-3-5-haiku-latest",
 			["claude-3.5-sonnet"] = "claude-3-5-sonnet-20240620",
 			["claude-3.5-sonnet-new"] = "claude-3-5-sonnet-20241022",
 			["claude-3.5-sonnet-latest"] = "claude-3-5-sonnet-latest",
-			-- ["claude-3.5-haiku"] = "claude-3-5-haiku-latest",
+            ["claude-3.7-sonnet"] = "claude-3-7-sonnet-20250219",
+            ["claude-3.7-sonnet-latest"] = "claude-3-7-sonnet-latest",
 			-- versionless aliases
-			["claude"] = "claude-3-5-sonnet-20240620",
-			["sonnet"] = "claude-3-5-sonnet-20240620",
-			["sonnet-new"] = "claude-3-5-sonnet-20241022",
-			["sonnet-latest"] = "claude-3-5-sonnet-latest",
+			["claude"] = "claude-3-7-sonnet-latest",
+			["claude-sonnet"] = "claude-3-7-sonnet-latest",
+			["sonnet-latest"] = "claude-3-7-sonnet-latest",
+            ["haiku"] = "claude-3-5-haiku-latest",
+            ["claude-haiku"] = "claude-3-5-haiku-latest",
 		},
 		headers = function()
 			return {
