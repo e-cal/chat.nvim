@@ -32,7 +32,7 @@ M.new_chat = function()
 end
 
 M.open = function(filename)
-	chat.open(filename, false)
+	chat.open_chat(filename, false)
 end
 
 M.delete = function()

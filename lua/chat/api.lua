@@ -29,26 +29,13 @@ provider = {
 }
 ]]
 local providers = {
-	entropix = {
-		url = "127.0.0.1:1337/v1/chat/completions",
-		model_map = {
-			["entropix"] = "llama-1b",
-			["llama-1b"] = "llama-1b",
-			["smollm"] = "smollm",
-		},
-		headers = function()
-			return {
-				["Content-Type"] = "application/json",
-			}
-		end,
-	},
 	openai = {
 		url = "https://api.openai.com/v1/chat/completions",
 		model_pattern = "gpt",
-        model_map = {
-            ["o1"] = "o1-2024-12-17",
-            ["o3-mini"] = "o3-mini-2025-01-31",
-        },
+		model_map = {
+			["o1"] = "o1-2024-12-17",
+			["o3-mini"] = "o3-mini-2025-01-31",
+		},
 	},
 	anthropic = {
 		url = "https://api.anthropic.com/v1/messages",
@@ -59,21 +46,21 @@ local providers = {
 			["claude-3-sonnet"] = "claude-3-sonnet-20240229",
 			["claude-3-opus"] = "claude-3-opus-20240229",
 			-- 3.5 aliases
-            ["claude-3.5-haiku"] = "claude-3-5-haiku-20241022",
-            ["claude-3.5-haiku-latest"] = "claude-3-5-haiku-latest",
+			["claude-3.5-haiku"] = "claude-3-5-haiku-20241022",
+			["claude-3.5-haiku-latest"] = "claude-3-5-haiku-latest",
 			["claude-3.5-sonnet"] = "claude-3-5-sonnet-20240620",
 			["claude-3.5-sonnet-new"] = "claude-3-5-sonnet-20241022",
 			["claude-3.6-sonnet"] = "claude-3-5-sonnet-20241022",
 			["claude-3.5-sonnet-2"] = "claude-3-5-sonnet-20241022",
 			["claude-3.5-sonnet-latest"] = "claude-3-5-sonnet-latest",
-            ["claude-3.7-sonnet"] = "claude-3-7-sonnet-20250219",
-            ["claude-3.7-sonnet-latest"] = "claude-3-7-sonnet-latest",
+			["claude-3.7-sonnet"] = "claude-3-7-sonnet-20250219",
+			["claude-3.7-sonnet-latest"] = "claude-3-7-sonnet-latest",
 			-- versionless aliases
 			["claude"] = "claude-3-7-sonnet-latest",
 			["claude-sonnet"] = "claude-3-7-sonnet-latest",
 			["sonnet-latest"] = "claude-3-7-sonnet-latest",
-            ["haiku"] = "claude-3-5-haiku-latest",
-            ["claude-haiku"] = "claude-3-5-haiku-latest",
+			["haiku"] = "claude-3-5-haiku-latest",
+			["claude-haiku"] = "claude-3-5-haiku-latest",
 		},
 		headers = function()
 			return {
@@ -94,10 +81,10 @@ local providers = {
 	deepseek = {
 		url = "https://api.deepseek.com/chat/completions",
 		model_map = {
-            ["r1"] = "deepseek-reasoner",
-            ["deepseek-v3"] = "deepseek-chat",
-            ["deepseek-chat"] = "deepseek-chat",
-        },
+			["r1"] = "deepseek-reasoner",
+			["deepseek-v3"] = "deepseek-chat",
+			["deepseek-chat"] = "deepseek-chat",
+		},
 	},
 	groq = {
 		url = "https://api.groq.com/openai/v1/chat/completions",
@@ -186,7 +173,21 @@ local providers = {
 			["gemini-2-pro"] = "google/gemini-2.0-pro-exp-02-05:free",
 			["gemini-flash"] = "google/gemini-2.0-flash-001",
 			["gemini-flash-thinking"] = "google/gemini-2.0-flash-thinking-exp:free",
+			["gpt-4.5"] = "openai/gpt-4.5-preview",
 		},
+	},
+	entropix = {
+		url = "127.0.0.1:1337/v1/chat/completions",
+		model_map = {
+			["entropix"] = "llama-1b",
+			["llama-1b"] = "llama-1b",
+			["smollm"] = "smollm",
+		},
+		headers = function()
+			return {
+				["Content-Type"] = "application/json",
+			}
+		end,
 	},
 }
 
@@ -240,17 +241,9 @@ end
 
 local function get_provider(model)
 	for provider_name, provider_data in pairs(providers) do
-		if
-			type(provider_data.model_pattern) == "table"
-			and (provider_data.model_pattern[model] or vim.tbl_contains(vim.tbl_keys(provider_data.model_pattern), model))
-		then
+		if provider_data.model_map and provider_data.model_map and provider_data.model_map[model] ~= nil then
 			return provider_name
-		elseif type(provider_data.model_pattern) == "string" and model:find(provider_data.model_pattern) then
-			return provider_name
-		elseif
-			provider_data.model_map
-			and (provider_data.model_map[model] or vim.tbl_contains(vim.tbl_keys(provider_data.model_map), model))
-		then
+		elseif provider_data.model_pattern and model:find(provider_data.model_pattern) then
 			return provider_name
 		end
 	end
@@ -285,9 +278,9 @@ local function get_curl_args(messages, model, temp, save_path, stream)
 		messages = messages,
 		model = model,
 	}
-    if temp ~= nil then
+	if temp ~= nil then
 		data.temperature = temp
-    end
+	end
 	if save_path then
 		data.save_path = save_path
 	end
@@ -327,7 +320,9 @@ local function handle_stream_chunk(chunk, bufnr, raw_chunks)
 		local chunk_content
 		if chunk_data.choices ~= nil then -- openai-style api
 			local chunk_delta = chunk_data.choices[1].delta
-            chunk_content = ((not chunk_delta.content or chunk_delta.content == vim.NIL) and chunk_delta.reasoning_content) or chunk_delta.content
+			chunk_content = (
+				(not chunk_delta.content or chunk_delta.content == vim.NIL) and chunk_delta.reasoning_content
+			) or chunk_delta.content
 		elseif chunk_data.type == "content_block_delta" then -- anthropic api
 			chunk_content = chunk_data.delta.text
 		end

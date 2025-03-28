@@ -127,7 +127,7 @@ M.load_last_chat = function(selection, ft)
 	return bufnr
 end
 
-M.open = function(filename, popup)
+M.open_chat = function(filename, popup)
 	if popup then
 		local popup_win = require("chat.popup")
 		if not popup_win.is_open() then
