@@ -22,46 +22,20 @@ end
 --[[
 provider = {
     url:  string provider chat completions url
-    models: string to match for model names | table list of models (model map is used to enumerate models if not present)
-    model_map: table map model abbreviation to api model name
+    match_pattern: string pattern to match for model names
     headers: custom headers for the provider
     prepare_data: function (params: data, model) to modify data before sending (if provider doesn't expect standard openai data format)
 }
 ]]
 local providers = {
+	openrouter = { url = "https://openrouter.ai/api/v1/chat/completions" },
 	openai = {
 		url = "https://api.openai.com/v1/chat/completions",
-		model_pattern = "gpt",
-		model_map = {
-			["o1"] = "o1-2024-12-17",
-			["o3-mini"] = "o3-mini-2025-01-31",
-		},
+		match_pattern = "gpt",
 	},
 	anthropic = {
 		url = "https://api.anthropic.com/v1/messages",
-		model_pattern = "claude",
-		model_map = {
-			-- 3 aliases
-			["claude-3-haiku"] = "claude-3-haiku-20240307",
-			["claude-3-sonnet"] = "claude-3-sonnet-20240229",
-			["claude-3-opus"] = "claude-3-opus-20240229",
-			-- 3.5 aliases
-			["claude-3.5-haiku"] = "claude-3-5-haiku-20241022",
-			["claude-3.5-haiku-latest"] = "claude-3-5-haiku-latest",
-			["claude-3.5-sonnet"] = "claude-3-5-sonnet-20240620",
-			["claude-3.5-sonnet-new"] = "claude-3-5-sonnet-20241022",
-			["claude-3.6-sonnet"] = "claude-3-5-sonnet-20241022",
-			["claude-3.5-sonnet-2"] = "claude-3-5-sonnet-20241022",
-			["claude-3.5-sonnet-latest"] = "claude-3-5-sonnet-latest",
-			["claude-3.7-sonnet"] = "claude-3-7-sonnet-20250219",
-			["claude-3.7-sonnet-latest"] = "claude-3-7-sonnet-latest",
-			-- versionless aliases
-			["claude"] = "claude-3-7-sonnet-latest",
-			["claude-sonnet"] = "claude-3-7-sonnet-latest",
-			["sonnet-latest"] = "claude-3-7-sonnet-latest",
-			["haiku"] = "claude-3-5-haiku-latest",
-			["claude-haiku"] = "claude-3-5-haiku-latest",
-		},
+		match_pattern = "claude",
 		headers = function()
 			return {
 				["Content-Type"] = "application/json",
@@ -78,74 +52,12 @@ local providers = {
 			return data
 		end,
 	},
-	deepseek = {
-		url = "https://api.deepseek.com/chat/completions",
-		model_map = {
-			["r1"] = "deepseek-reasoner",
-			["deepseek-v3"] = "deepseek-chat",
-			["deepseek-chat"] = "deepseek-chat",
-		},
-	},
-	groq = {
-		url = "https://api.groq.com/openai/v1/chat/completions",
-		model_map = {
-			["llama3-8b"] = "llama3-8b-8192",
-			["llama3-70b"] = "llama3-70b-8192",
-			["mixtral"] = "mixtral-8x7b-32768",
-			["mixtral-8x7b"] = "mixtral-8x7b-32768",
-			["gemma-7b"] = "gemma-7b-it",
-			["llama-3.1-8b"] = "llama-3.1-8b-instant",
-			["llama-3.1-70b"] = "llama-3.1-70b-versatile",
-			["groq/r1"] = "deepseek-r1-distill-llama-70b",
-		},
-	},
-	cerebras = {
-		url = "https://api.cerebras.ai/v1/chat/completions",
-		model_map = {
-			["cerebras/llama-3.1-8b"] = "llama-3.1-8b",
-			["cerebras/llama-3.1-70b"] = "llama-3.1-70b",
-			["cerebras/llama-3.3-70b"] = "llama-3.3-70b",
-		},
-	},
-	topology = {
-		url = "https://topologychat.com/api/chat/completions",
-		model_pattern = "topology",
-		prepare_data = function(data, model)
-			-- TODO: this should be managed the same as api keys using config probably
-			local f = assert(io.open(os.getenv("HOME") .. "/.cache/clm-default-partition", "r"))
-			local partition_id = string.gsub(f:read("*all"), "\n", "")
-			f:close()
-			data.partition_id = partition_id
-			return data
-		end,
-	},
-	fireworks = {
-		url = "https://api.fireworks.ai/inference/v1/chat/completions",
-		model_map = {
-			["fireworks/llama-3.1-8b"] = "llama-v3p1-8b-instruct",
-			["fireworks/llama-3.1-70b"] = "llama-v3p1-70b-instruct",
-			["fireworks/llama-3.1-405b"] = "llama-v3p1-405b-instruct",
-		},
-		prepare_data = function(data, model)
-			data.model = "accounts/fireworks/models/" .. model
-			return data
-		end,
-	},
-	hyperbolic = {
-		url = "https://api.hyperbolic.xyz/v1/chat/completions",
-		model_map = {
-			["llama-405b"] = "meta-llama/Meta-Llama-3.1-405B-Instruct",
-			["llama-3.1-405b"] = "meta-llama/Meta-Llama-3.1-405B-Instruct",
-			["llama-3.1-70b-bf16"] = "meta-llama/Meta-Llama-3.1-70B-Instruct",
-			["llama-3.1-8b-bf16"] = "meta-llama/Meta-Llama-3.1-8B-Instruct",
-		},
-	},
+	deepseek = { url = "https://api.deepseek.com/chat/completions" },
+	groq = { url = "https://api.groq.com/openai/v1/chat/completions" },
+	cerebras = { url = "https://api.cerebras.ai/v1/chat/completions" },
+	hyperbolic = { url = "https://api.hyperbolic.xyz/v1/chat/completions" },
 	hyperbolic_base = {
 		url = "https://api.hyperbolic.xyz/v1/completions",
-		model_map = {
-			["llama-3.1-405b-base"] = "meta-llama/Meta-Llama-3.1-405B",
-			["llama-3.1-405b-fp8-base"] = "meta-llama/Meta-Llama-3.1-405B-FP8",
-		},
 		prepare_data = function(data, _)
 			local prompt = ""
 			for _, message in ipairs(data.messages) do
@@ -162,27 +74,15 @@ local providers = {
 			return default_headers("hyperbolic")
 		end,
 	},
-	openrouter = { -- fallback
-		url = "https://openrouter.ai/api/v1/chat/completions",
-		model_map = {
-			["openrouter/llama-3.1-405b"] = "meta-llama/llama-3.1-405b-instruct",
-			["nous-hermes"] = "nousresearch/hermes-3-llama-3.1-405b",
-			["o1"] = "openai/o1-preview",
-			["o1-mini"] = "openai/o1-mini",
-			["openrouter/r1"] = "deepseek/deepseek-r1",
-			["gemini-2-pro"] = "google/gemini-2.0-pro-exp-02-05:free",
-			["gemini-flash"] = "google/gemini-2.0-flash-001",
-			["gemini-flash-thinking"] = "google/gemini-2.0-flash-thinking-exp:free",
-			["gpt-4.5"] = "openai/gpt-4.5-preview",
-		},
+	fireworks = {
+		url = "https://api.fireworks.ai/inference/v1/chat/completions",
+		prepare_data = function(data, model)
+			data.model = "accounts/fireworks/models/" .. model
+			return data
+		end,
 	},
 	entropix = {
 		url = "127.0.0.1:1337/v1/chat/completions",
-		model_map = {
-			["entropix"] = "llama-1b",
-			["llama-1b"] = "llama-1b",
-			["smollm"] = "smollm",
-		},
 		headers = function()
 			return {
 				["Content-Type"] = "application/json",
@@ -241,9 +141,10 @@ end
 
 local function get_provider(model)
 	for provider_name, provider_data in pairs(providers) do
-		if provider_data.model_map and provider_data.model_map and provider_data.model_map[model] ~= nil then
+		local model_map = config.model_maps[provider_name]
+		if model_map and model_map[model] ~= nil then
 			return provider_name
-		elseif provider_data.model_pattern and model:find(provider_data.model_pattern) then
+		elseif provider_data.match_pattern and model:find(provider_data.match_pattern) then
 			return provider_name
 		end
 	end
@@ -255,6 +156,9 @@ end
 
 local function get_curl_args(messages, model, temp, save_path, stream)
 	local provider_name = get_provider(model)
+	if config.opts.print_provider then
+		print(string.format("Using %s via %s", model, provider_name))
+	end
 	local provider = providers[provider_name]
 	local url = provider.url
 	local headers
@@ -264,8 +168,9 @@ local function get_curl_args(messages, model, temp, save_path, stream)
 		headers = default_headers(provider_name)
 	end
 
-	if provider.model_map then
-		for key, value in pairs(provider.model_map) do
+	local model_map = config.model_maps[provider_name]
+	if model_map then
+		for key, value in pairs(model_map) do
 			if model == key or model == value then
 				model = value
 				break

@@ -1,8 +1,97 @@
 local M = {}
 
+-- Users can provide custom mappings of model alias to api model name
+-- can also be used to set the provider for a model (e.g. aliasing a gpt model to openrouter to use that over the openai api)
+M.default_model_maps = {
+	openrouter = {
+		["openrouter/llama-3.1-405b"] = "meta-llama/llama-3.1-405b-instruct",
+		["nous-hermes"] = "nousresearch/hermes-3-llama-3.1-405b",
+		["o1"] = "openai/o1-preview",
+		["o1-mini"] = "openai/o1-mini",
+		["o3-mini"] = "openai/o3-mini",
+		["o3-mini-high"] = "openai/o3-mini-high",
+		["openrouter/r1"] = "deepseek/deepseek-r1",
+		["gemini-2-pro"] = "google/gemini-2.0-pro-exp-02-05:free",
+		["gemini-flash"] = "google/gemini-2.0-flash-001",
+		["gemini-flash-thinking"] = "google/gemini-2.0-flash-thinking-exp:free",
+		["gpt-4.5"] = "openai/gpt-4.5-preview",
+		["gemini-2.5"] = "google/gemini-2.5-pro-exp-03-25:free",
+		["gemini-2.5-pro"] = "google/gemini-2.5-pro-exp-03-25:free",
+	},
+	openai = {
+		["o1"] = "o1-2024-12-17",
+		["o3-mini"] = "o3-mini-2025-01-31",
+	},
+	anthropic = {
+		-- claude 3 aliases
+		["claude-3-haiku"] = "claude-3-haiku-20240307",
+		["claude-3-sonnet"] = "claude-3-sonnet-20240229",
+		["claude-3-opus"] = "claude-3-opus-20240229",
+		-- claude 3.5 aliases
+		["claude-3.5-haiku"] = "claude-3-5-haiku-20241022",
+		["claude-3.5-haiku-latest"] = "claude-3-5-haiku-latest",
+		["claude-3.5-sonnet"] = "claude-3-5-sonnet-20240620",
+		-- new sonnet
+		["claude-3.5-sonnet-new"] = "claude-3-5-sonnet-20241022",
+		["claude-3.6-sonnet"] = "claude-3-5-sonnet-20241022",
+		["claude-3.5-sonnet-2"] = "claude-3-5-sonnet-20241022",
+		["claude-3.5-sonnet-latest"] = "claude-3-5-sonnet-latest",
+		-- 3.7 sonnet
+		["claude-3.7-sonnet"] = "claude-3-7-sonnet-20250219",
+		["claude-3.7-sonnet-latest"] = "claude-3-7-sonnet-latest",
+		-- versionless aliases
+		["claude"] = "claude-3-7-sonnet-latest",
+		["claude-sonnet"] = "claude-3-7-sonnet-latest",
+		["sonnet-latest"] = "claude-3-7-sonnet-latest",
+		["haiku"] = "claude-3-5-haiku-latest",
+		["claude-haiku"] = "claude-3-5-haiku-latest",
+	},
+	deepseek = {
+		["r1"] = "deepseek-reasoner",
+		["deepseek-v3"] = "deepseek-chat",
+		["deepseek-chat"] = "deepseek-chat",
+	},
+	groq = {
+		["llama3-8b"] = "llama3-8b-8192",
+		["llama3-70b"] = "llama3-70b-8192",
+		["mixtral"] = "mixtral-8x7b-32768",
+		["mixtral-8x7b"] = "mixtral-8x7b-32768",
+		["gemma-7b"] = "gemma-7b-it",
+		["llama-3.1-8b"] = "llama-3.1-8b-instant",
+		["llama-3.1-70b"] = "llama-3.1-70b-versatile",
+		["groq/r1"] = "deepseek-r1-distill-llama-70b",
+	},
+	cerebras = {
+		["cerebras/llama-3.1-8b"] = "llama-3.1-8b",
+		["cerebras/llama-3.1-70b"] = "llama-3.1-70b",
+		["cerebras/llama-3.3-70b"] = "llama-3.3-70b",
+	},
+	fireworks = {
+		["fireworks/llama-3.1-8b"] = "llama-v3p1-8b-instruct",
+		["fireworks/llama-3.1-70b"] = "llama-v3p1-70b-instruct",
+		["fireworks/llama-3.1-405b"] = "llama-v3p1-405b-instruct",
+	},
+	hyperbolic = {
+		["llama-405b"] = "meta-llama/Meta-Llama-3.1-405B-Instruct",
+		["llama-3.1-405b"] = "meta-llama/Meta-Llama-3.1-405B-Instruct",
+		["llama-3.1-70b-bf16"] = "meta-llama/Meta-Llama-3.1-70B-Instruct",
+		["llama-3.1-8b-bf16"] = "meta-llama/Meta-Llama-3.1-8B-Instruct",
+	},
+	hyperbolic_base = {
+		["llama-3.1-405b-base"] = "meta-llama/Meta-Llama-3.1-405B",
+		["llama-3.1-405b-fp8-base"] = "meta-llama/Meta-Llama-3.1-405B-FP8",
+	},
+	entropix = {
+		["entropix"] = "llama-1b",
+		["llama-1b"] = "llama-1b",
+		["smollm"] = "smollm",
+	},
+}
+
 M.defaults = function()
 	return {
 		dir = vim.fn.stdpath("data") .. "/chat-nvim", -- dir to save/load chats
+		save_to_working_dir = false, -- save new chats to the current working directory instead of the global chat dir
 		api_keys = {
 			openai = function()
 				return os.getenv("OPENAI_API_KEY") or vim.fn.input("OpenAI API Key: ")
@@ -34,7 +123,7 @@ M.defaults = function()
 		},
 		default = { -- default values for chat parameters (overwritten if changed inline in chat)
 			title = "# New Chat",
-			model = "claude-3.5-sonnet", -- model names will auto add the suffix if needed
+			model = "claude-3.7-sonnet",
 			temp = 0.8, -- model temperature
 			system_message = [[You are an expert programmer working alongside an expert colleague. 
 Your colleague will ask you various questions about their code and ask you to assist with some coding tasks. 
@@ -47,6 +136,7 @@ Answer concisely and when asked for code avoid unnecessary verbose explanation.
 		wrap = false, -- enable line wrap (j/k are bound to gj and gk in the chat buffer so line wrap doesn't suck)
 		scroll_on_focus = false, -- automatically scroll to the bottom when chat is focused
 		code_register = "c", -- register to use for yanking/pasting code
+		print_provider = false, -- print model and provider info when making requests
 		keymap = {
 			send_message = "<CR>", -- normal mode keybind in chat windows to send message
 			yank_code = "<leader>cy", -- yank the fenced code block under cursor into the code register
@@ -62,8 +152,8 @@ Answer concisely and when asked for code avoid unnecessary verbose explanation.
 			chat = "## Chat",
 			user = "### User",
 			assistant = "### Assistant",
-            file = "> @",
-            entropix_save_path = "> Save: ",
+			file = "> @",
+			entropix_save_path = "> Save: ",
 		},
 		popup = {
 			size = 40, -- percent of screen
@@ -90,6 +180,12 @@ end
 M.setup = function(opts)
 	opts = opts or {}
 	M.opts = vim.tbl_deep_extend("force", {}, M.defaults(), opts)
+	M.model_maps = vim.deepcopy(M.default_model_maps)
+	if opts.model_maps then
+		for provider, model_map in pairs(opts.model_maps) do
+			M.model_maps[provider] = vim.tbl_deep_extend("force", M.model_maps[provider] or {}, model_map)
+		end
+	end
 end
 
 return M
