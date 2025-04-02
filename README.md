@@ -65,28 +65,24 @@ Using lazy.nvim
 
 ### Models
 
-Set the model at the top of chat buffers and in the config for inline
-completions.
+Set the model at the top of chat buffers and in the config for inline completions.
 
-> See the full list by looking in `lua/chat/api.lua`
+Model mappings (alias -> provider api model) are defined your config, see `lua/chat/config.lua` for the full list and to configure custom model aliases.
 
-- **OpenAI**: all `gpt` models supported
-  - use the model name as it appears in the API
-  - e.g. `gpt-3.5-turbo`, `gpt-4o`, `gpt-4`, `gpt-4-0613`
-- **Anthropic**: all `claude` models supported
-  - can use the model name with or without the date suffix
-  - can use `3.5` or `3-5`
-  - e.g. `claude-3.5-sonnet`, `claude-3-5-sonnet`, `claude-3-opus`, `claude-3-haiku-20240307`
-- **DeepSeek**: `r1` and `deepseek-chat`
-- **Topology**: `topology-tiny`, `topology-small`, and `topology-medium`
-- **Groq**: all models supported
-  - can use the model name with or without the suffix (date/type)
-  - must add `groq/` prefix to use groq for Llama 3.1 405B (for 3.1 only 8B defaults to groq without the prefix)
-  - e.g. `llama3-8b`, `llama3-70b-8192`, `mixtral-8x7b`, `gemma-7b`, `llama-3.1-8b`, `llama-3.1-70b`, `groq/llama-3.1-405b`
-- **Fireworks AI**: `llama-3.1-405b`, `fireworks/llama-3.1-70b`, `fireworks/llama-3.1-8b`
-- **OpenRouter**: all models supported, enter model with prefix as it is on [OpenRouter](https://openrouter.ai/models)
-  - e.g. `meta-llama/llama-3.1-8b-instruct:free`, `nousresearch/hermes-3-llama-3.1-70b`, `meta-llama/llama-3.1-405b`, `perplexity/llama-3.1-sonar-large-128k-online`
-- and way more! peek in `lua/chat/api.lua`
+Any model name without a configured mapping will automatically try to match a provider pattern (e.g. anything with `gpt` in the name will try to use OpenAI) and fallback to OpenRouter if no matching pattern is found (so you can always just use OpenRouter model ids and it will just work).
+
+Supported APIs:
+- OpenAI
+- Anthropic
+- DeepSeek
+- **OpenRouter** (fallback)
+- Groq
+- Cerebras
+- Hyperbolic
+- FireworksAI
+- _localhost_ (will need configuration in `lua/chat/api.lua`. See `entropix` provider)
+
+
 
 ## Configuration
 
@@ -99,40 +95,31 @@ Defaults:
     openai = function()
       return os.getenv("OPENAI_API_KEY") or vim.fn.input("OpenAI API Key: ")
     end,
-    anthropic = function()
-      return os.getenv("ANTHROPIC_API_KEY") or vim.fn.input("Anthropic API Key: ")
-    end,
-    deepseek = function()
-      return os.getenv("DEEPSEEK_API_KEY") or vim.fn.input("DeepSeek API Key: ")
-    end,
-    groq = function()
-      return os.getenv("GROQ_API_KEY") or vim.fn.input("Groq API Key: ")
-    end,
-    fireworks = function()
-      return os.getenv("FIREWORKS_API_KEY") or vim.fn.input("Fireworks AI API Key: ")
-    end,
-    topology = function()
-      return os.getenv("TOPOLOGY_API_KEY") or vim.fn.input("Topology API Key: ")
-    end,
-    openrouter = function()
-      return os.getenv("OPENROUTER_API_KEY") or vim.fn.input("OpenRouter API Key: ")
-    end,
+    -- ... repeated for all the providers ...
+  },
+  model_maps = {
+    openrouter = {
+      ["o1"] = "openai/o1-preview", -- maps the model name "o1" to use openrouter and expand into the proper api model name "openai/o1-preview"
+      -- ...
+    }
+    -- ...
   },
   default = { -- default values for chat parameters (overwritten if changed inline in chat)
     title = "# New Chat",
-    model = "claude-3.5-sonnet", -- model names will auto add the suffix if needed
-    temp = 0, -- model temperature
-    system_message = [[You are an expert programmer working alongside an expert colleague.
-Your colleague will ask you various questions about their code and ask you to assist with some coding tasks.
+    model = "claude-3.7-sonnet",
+    temp = 0.8, -- model temperature
+    system_message = [[You are an expert programmer working alongside an expert colleague. 
+Your colleague will ask you various questions about their code and ask you to assist with some coding tasks. 
 Answer concisely and when asked for code avoid unnecessary verbose explanation.
 ]],
   },
-  title_model = "meta-llama/llama-3.1-8b-instruct:free", -- model used to generate chat titles
+  title_model = "meta-llama/llama-3.1-8b-instruct", -- model used to generate chat titles
   auto_scroll = true, -- scroll to bottom of chat when response is finished
   auto_format = true, -- automatically format the chat on save
   wrap = false, -- enable line wrap (j/k are bound to gj and gk in the chat buffer so line wrap doesn't suck)
   scroll_on_focus = false, -- automatically scroll to the bottom when chat is focused
   code_register = "c", -- register to use for yanking/pasting code
+  print_provider = false, -- print model and provider info when making requests
   finder = "telescope", -- "telescope" or "fzf" - determines which finder to use for opening chats
   keymap = {
     send_message = "<CR>", -- normal mode keybind in chat windows to send message
@@ -147,26 +134,31 @@ Answer concisely and when asked for code avoid unnecessary verbose explanation.
     temp = "> Temperature: ",
     system = "> System Message",
     chat = "## Chat",
-    user = "> User",
-    assistant = "> Assistant",
+    user = "### User",
+    assistant = "### Assistant",
+    file = "> @",
+    entropix_save_path = "> Save: ",
   },
   popup = {
     size = 40, -- percent of screen
     direction = "right", -- left, right, top, bottom, center
   },
   inline = {
-    model = "claude-3.5-sonnet",
-    temp = 0, -- model temperature
-    system_message = [[You are an expert programmer working alongside an expert colleague.
-You will be given code snippets.
-Treat comments that don't have accompanying code as instructions on what needs to be done.
+    base_model = "llama-3.1-405b-base",
+    instruct_model = "claude-3.7-sonnet",
+    system_message = [[You are an expert programmer working alongside an expert colleague. 
+You will be given code snippets. 
+Interpret comments as instructions on code that needs to be written if there isn't already code addressing the comment or if the comment requests refactoring.
 Only respond with code, make all comments and explanation as code comments.
-Do not respond or acknowledge the request in any way, just start coding.
-Continue where the code leaves off, do not repeat existing code unless it needs to be changed.
-There is no need to fence the code with triple backticks, just start writing code.
-Only do exactly as instructed, do not add code that was not explicitly asked for or described. Do not add more functionality than is asked for.
+Do not respond or acknowledge the request in any way, just start coding. Do not explain in prose what you are doing or how the code works. Code only.
+Continue where the code leaves off, do not repeat existing code. Only show the modified code.
+Just start writing code, do not format as markdown, write plain code.
+Only do exactly as instructed, do not add code that was not explicitly asked for or described. Do not add more functionality than is asked for. Do not continue the program beyond what specific functionality the user requests.
 ]],
+    temp = 0.1, -- model temperature
+    max_tokens = 512, -- max length of response
   },
+
 }
 ```
 
