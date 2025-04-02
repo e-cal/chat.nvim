@@ -137,6 +137,7 @@ Answer concisely and when asked for code avoid unnecessary verbose explanation.
 		scroll_on_focus = false, -- automatically scroll to the bottom when chat is focused
 		code_register = "c", -- register to use for yanking/pasting code
 		print_provider = false, -- print model and provider info when making requests
+		finder = "telescope", -- "telescope" or "fzf" - determines which finder to use for opening chats
 		keymap = {
 			send_message = "<CR>", -- normal mode keybind in chat windows to send message
 			yank_code = "<leader>cy", -- yank the fenced code block under cursor into the code register

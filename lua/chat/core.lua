@@ -210,9 +210,81 @@ M.open_chat = function(filename, popup)
 		})
 	end
 
-	-- wait so the popup doesn't cover telescope
+	local function call_fzf()
+		-- Check if FZF-Vim is available
+		if not vim.fn.exists("*fzf#run") == 1 then
+			vim.notify(
+				"FZF-Vim is not installed. Please install it or set config.opts.finder = 'telescope'.",
+				vim.log.levels.ERROR
+			)
+			return
+		end
+
+		-- Get chat files with titles and timestamps
+		local chat_entries = {}
+
+		for _, file in ipairs(vim.fn.readdir(config.opts.dir)) do
+			if file:match("%.chat$") then
+				local path = string.format("%s/%s", config.opts.dir, file)
+				local lines = vim.fn.readfile(path, "", 1) -- Read just the first line (title)
+				if #lines > 0 and lines[1]:match("^# ") then
+					local title = lines[1]:sub(3) -- Remove "# " prefix
+					local stat = vim.loop.fs_stat(path)
+					local timestamp = os.date("%d-%m-%Y", stat.mtime.sec)
+					local display = string.format("%s (%s)", title, timestamp)
+
+					table.insert(chat_entries, {
+						display = display,
+						path = path,
+						timestamp = stat.mtime.sec,
+					})
+				end
+			end
+		end
+
+		-- Sort by modification time (newest first)
+		table.sort(chat_entries, function(a, b)
+			return a.timestamp > b.timestamp
+		end)
+
+		-- Create display strings for FZF
+		local display_entries = {}
+		local path_map = {}
+		for _, entry in ipairs(chat_entries) do
+			table.insert(display_entries, entry.display)
+			path_map[entry.display] = entry.path
+		end
+
+		-- Simple FZF options
+		local options = {
+			source = display_entries,
+			options = {
+				"--prompt",
+				"Load Conversation> ",
+				"--bind",
+				"esc:abort",
+			},
+			sink = function(selected)
+				if selected then
+					local path = path_map[selected]
+					if path then
+						vim.cmd("edit " .. path)
+					end
+				end
+			end,
+		}
+
+		-- Run FZF
+		vim.fn["fzf#run"](vim.fn["fzf#wrap"](options))
+	end
+
+	-- wait so the popup doesn't cover finder
 	vim.defer_fn(function()
-		call_telescope()
+		if config.opts.finder == "fzf" then
+			call_fzf()
+		else
+			call_telescope()
+		end
 	end, 100)
 end
 
@@ -255,38 +327,38 @@ local function parse_messages(bufnr)
 			elseif line:find("^" .. config.opts.delimiters.temp) then
 				temp = tonumber(line:sub(config.opts.delimiters.temp:len() + 1))
 			elseif line:find("^" .. config.opts.delimiters.entropix_save_path) then
-                -- make it substitute "./" with the current directory
-                save_path = line:sub(config.opts.delimiters.entropix_save_path:len() + 1)
+				-- make it substitute "./" with the current directory
+				save_path = line:sub(config.opts.delimiters.entropix_save_path:len() + 1)
 
-                -- Get the current directory
-                local current_dir = vim.fn.getcwd()
+				-- Get the current directory
+				local current_dir = vim.fn.getcwd()
 
-                -- Substitute "./" with the current directory
-                save_path = save_path:gsub("^%./", current_dir .. "/")
+				-- Substitute "./" with the current directory
+				save_path = save_path:gsub("^%./", current_dir .. "/")
 			else
 				in_chat = line == config.opts.delimiters.chat
 
 				if in_system and not in_chat and (#sys_message > 0 or line ~= "") then
-                    if line:find("^" .. config.opts.delimiters.file) then
-                        local filename = line:sub(config.opts.delimiters.file:len() + 1)
-                        print("[chat.nvim] inserting file: " .. filename)
-                        local file = io.open(filename, "r")
-                        if not file then
-                            print("[chat.nvim] error opening file: " .. filename)
-                        else
-                            local file_content = file:read("*a")
-                            local file_extension = filename:match("%.([^%.]+)$") or ""
-                            file:close()
-                            table.insert(sys_message, filename)
-                            table.insert(sys_message, "```" .. file_extension)
-                            for file_line in file_content:gmatch("[^\r\n]+") do
-                                table.insert(sys_message, file_line)
-                            end
-                            table.insert(sys_message, "```")
-                        end
-                    else
-                        table.insert(sys_message, line)
-                    end
+					if line:find("^" .. config.opts.delimiters.file) then
+						local filename = line:sub(config.opts.delimiters.file:len() + 1)
+						print("[chat.nvim] inserting file: " .. filename)
+						local file = io.open(filename, "r")
+						if not file then
+							print("[chat.nvim] error opening file: " .. filename)
+						else
+							local file_content = file:read("*a")
+							local file_extension = filename:match("%.([^%.]+)$") or ""
+							file:close()
+							table.insert(sys_message, filename)
+							table.insert(sys_message, "```" .. file_extension)
+							for file_line in file_content:gmatch("[^\r\n]+") do
+								table.insert(sys_message, file_line)
+							end
+							table.insert(sys_message, "```")
+						end
+					else
+						table.insert(sys_message, line)
+					end
 				end
 
 				if in_chat then
@@ -329,7 +401,7 @@ local function parse_messages(bufnr)
 			elseif role and (#content > 0 or line ~= "") then
 				if line:find("^" .. config.opts.delimiters.file) then -- insert file
 					local filename = line:sub(config.opts.delimiters.file:len() + 1)
-                    print("[chat.nvim] inserting file: " .. filename)
+					print("[chat.nvim] inserting file: " .. filename)
 					-- insert the contents of the file
 					local file = io.open(filename, "r")
 					if not file then
@@ -386,7 +458,13 @@ local function generate_title(_messages, bufnr)
 		end
 	end
 
-	api.request({ messages = messages, model = config.opts.title_model, temp = 0.8, bufnr = bufnr, on_complete = on_complete })
+	api.request({
+		messages = messages,
+		model = config.opts.title_model,
+		temp = 0.8,
+		bufnr = bufnr,
+		on_complete = on_complete,
+	})
 end
 
 M.send_message = function()

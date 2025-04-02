@@ -24,7 +24,7 @@ Using lazy.nvim
   "e-cal/chat.nvim",
   dependencies = {
     "MunifTanjim/nui.nvim",
-    "nvim-telescope/telescope.nvim",
+    "nvim-telescope/telescope.nvim", -- Default finder (can be replaced with junegunn/fzf.vim)
   },
   opts = {
     -- your config, or leave empty for defaults
@@ -133,6 +133,7 @@ Answer concisely and when asked for code avoid unnecessary verbose explanation.
   wrap = false, -- enable line wrap (j/k are bound to gj and gk in the chat buffer so line wrap doesn't suck)
   scroll_on_focus = false, -- automatically scroll to the bottom when chat is focused
   code_register = "c", -- register to use for yanking/pasting code
+  finder = "telescope", -- "telescope" or "fzf" - determines which finder to use for opening chats
   keymap = {
     send_message = "<CR>", -- normal mode keybind in chat windows to send message
     yank_code = "<leader>cy", -- yank the fenced code block under cursor into the code register
