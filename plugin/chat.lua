@@ -60,7 +60,7 @@ cmd("ChatOpen", function(opts)
 	require("chat").open(filename)
 end, {
 	nargs = "?",
-    -- TODO: get the list of chat files using config for path
+	-- TODO: get the list of chat files using config for path
 	-- complete = function()
 	-- 	return vim.fn.readdir()
 	-- end,
@@ -80,8 +80,8 @@ cmd("ChatInline", function(opts)
 	if vim.fn.mode():match("[vV]") then
 		vim.cmd('silent normal! "vy')
 		context = vim.fn.getreg("v")
-        vim.cmd("normal! `>")
-        vim.cmd("normal! o")
+		vim.cmd("normal! `>")
+		vim.cmd("normal! o")
 	else
 		-- send the whole file up to the cursor line
 		context = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line("."), true)
@@ -89,9 +89,9 @@ cmd("ChatInline", function(opts)
 	end
 
 	local model = "default"
-    if opts.args and opts.args ~= "" then
-        model = opts.args
-    end
+	if opts.args and opts.args ~= "" then
+		model = opts.args
+	end
 
 	require("chat").inline(context, model)
 end, {
@@ -103,17 +103,17 @@ cmd("ChatReplace", function(opts)
 	if vim.fn.mode():match("[vV]") then
 		vim.cmd('silent normal! "vy')
 		context = vim.fn.getreg("v")
-        vim.cmd("normal! gv")
-        vim.cmd('normal! "_d')
+		vim.cmd("normal! gv")
+		vim.cmd('normal! "_d')
 	else
-        print("not in visual mode")
-        return
+		print("not in visual mode")
+		return
 	end
 
 	local model = "default"
-    if opts.args and opts.args ~= "" then
-        model = opts.args
-    end
+	if opts.args and opts.args ~= "" then
+		model = opts.args
+	end
 
 	require("chat").replace(context, model)
 end, {
@@ -172,7 +172,41 @@ autocmd("BufWritePre", {
 autocmd("VimResized", {
 	group = chat_group,
 	pattern = "*.chat",
-    callback = function()
-    vim.opt.textwidth = math.floor(vim.api.nvim_win_get_width(0) - 10)
-    end,
+	callback = function()
+		vim.opt.textwidth = math.floor(vim.api.nvim_win_get_width(0) - 10)
+	end,
+})
+
+autocmd("QuitPre", { -- close chat windows when last non-chat buffer is closed
+	group = chat_group,
+	callback = function()
+		local current_buf = vim.api.nvim_get_current_buf()
+		local current_buf_name = vim.api.nvim_buf_get_name(current_buf)
+
+		-- Don't close chats if we're closing a chat buffer
+		if string.match(current_buf_name, "%.chat$") then
+			return
+		end
+
+		-- Count non-chat windows
+		local non_chat_wins = 0
+		local chat_wins = {}
+		for _, win in ipairs(vim.api.nvim_list_wins()) do
+			local win_buf = vim.api.nvim_win_get_buf(win)
+			local buf_name = vim.api.nvim_buf_get_name(win_buf)
+			if string.match(buf_name, "%.chat$") then
+				table.insert(chat_wins, win)
+			else
+				non_chat_wins = non_chat_wins + 1
+			end
+		end
+
+		-- Only close chat windows if this is the last non-chat window
+		if non_chat_wins <= 1 then
+			for _, win in ipairs(chat_wins) do
+				vim.api.nvim_win_close(win, false)
+			end
+		end
+	end,
+	nested = true,
 })
