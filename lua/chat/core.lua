@@ -220,6 +220,15 @@ M.open_chat = function(filename, popup)
 			return
 		end
 
+		-- Decide on preview command: bat -> cat -> none
+		local preview_cmd = ""
+		if vim.fn.executable("bat") == 1 then
+			-- Show line numbers, always color, limit lines so large files don't blow up FZF
+			preview_cmd = "bat --style=numbers --color=always --line-range :500 --language=markdown {2}"
+		elseif vim.fn.executable("cat") == 1 then
+			preview_cmd = "cat {2}"
+		end
+
 		-- Get chat files with titles and timestamps
 		local chat_entries = {}
 
@@ -251,7 +260,8 @@ M.open_chat = function(filename, popup)
 		local display_entries = {}
 		local path_map = {}
 		for _, entry in ipairs(chat_entries) do
-			table.insert(display_entries, entry.display)
+			-- That '\t entry.path' is for bat/cat preview
+			table.insert(display_entries, entry.display .. "\t" .. entry.path)
 			path_map[entry.display] = entry.path
 		end
 
@@ -259,10 +269,10 @@ M.open_chat = function(filename, popup)
 		local options = {
 			source = display_entries,
 			options = {
-				"--prompt",
-				"Load Conversation> ",
-				"--bind",
-				"esc:abort",
+				"--prompt", "Load Conversation> ",
+				"--bind", "esc:abort",
+				"--delimiter", "\t",
+				"--with-nth", "1",
 			},
 			sink = function(selected)
 				if selected then
@@ -273,6 +283,14 @@ M.open_chat = function(filename, popup)
 				end
 			end,
 		}
+
+		-- If we have a preview command, attach it
+		if preview_cmd ~= "" then
+			table.insert(options.options, "--preview")
+			table.insert(options.options, preview_cmd)
+			table.insert(options.options, "--preview-window")
+			table.insert(options.options, "right:60%")
+		end
 
 		-- Run FZF
 		vim.fn["fzf#run"](vim.fn["fzf#wrap"](options))
