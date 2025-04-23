@@ -152,7 +152,7 @@ M.open_chat = function(filename, popup)
 		local action_state = require("telescope.actions.state")
 
 		local custom_previewer = previewers.new_buffer_previewer({
-			define_preview = function(self, entry, status)
+			define_preview = function(self, entry, _)
 				local path = entry.path or entry.filename
 				vim.api.nvim_buf_set_option(self.state.bufnr, "filetype", "markdown")
 				vim.fn.jobstart({ "cat", path }, {
@@ -169,12 +169,12 @@ M.open_chat = function(filename, popup)
 		local entry_maker = function(line)
 			local entry = require("telescope.make_entry").gen_from_vimgrep()(line)
 			if entry.value:match(":1:1") then
-				local filename, lnum, col, text = line:match("^(.-):(%d+):(%d+):(.*)$")
-				entry.filename = filename
+				local entry_filename, lnum, col, text = line:match("^(.-):(%d+):(%d+):(.*)$")
+				entry.filename = entry_filename
 				entry.lnum = tonumber(lnum)
 				entry.col = tonumber(col)
 				entry.text = text
-				entry.path = require("plenary.path"):new(config.opts.dir, filename):absolute()
+				entry.path = require("plenary.path"):new(config.opts.dir, entry_filename):absolute()
 				entry.time = vim.loop.fs_stat(entry.path).mtime.sec
 				local timestamp = os.date("%b %d %Y", entry.time)
 				entry.display = string.format("%s (%s)", entry.text:sub(3), timestamp)
@@ -214,7 +214,6 @@ M.open_chat = function(filename, popup)
 	end
 
 	local function call_fzf()
-		-- Check if FZF-Vim is available
 		if not vim.fn.exists("*fzf#run") == 1 then
 			vim.notify(
 				"FZF-Vim is not installed. Please install it or set config.opts.finder = 'telescope'.",
@@ -223,24 +222,21 @@ M.open_chat = function(filename, popup)
 			return
 		end
 
-		-- Decide on preview command: bat -> cat -> none
 		local preview_cmd = ""
 		if vim.fn.executable("bat") == 1 then
-			-- Show line numbers, always color, limit lines so large files don't blow up FZF
 			preview_cmd = "bat --style=numbers --color=always --line-range :500 --language=markdown {2}"
 		elseif vim.fn.executable("cat") == 1 then
 			preview_cmd = "cat {2}"
 		end
 
-		-- Get chat files with titles and timestamps
 		local chat_entries = {}
 
 		for _, file in ipairs(vim.fn.readdir(config.opts.dir)) do
 			if file:match("%.chat$") then
 				local path = string.format("%s/%s", config.opts.dir, file)
-				local lines = vim.fn.readfile(path, "", 1) -- Read just the first line (title)
+				local lines = vim.fn.readfile(path, "", 1)
 				if #lines > 0 and lines[1]:match("^# ") then
-					local title = lines[1]:sub(3) -- Remove "# " prefix
+					local title = lines[1]:sub(3)
 					local stat = vim.loop.fs_stat(path)
 					local timestamp = os.date("%d-%m-%Y", stat.mtime.sec)
 					local display = string.format("%s (%s)", title, timestamp)
@@ -254,21 +250,17 @@ M.open_chat = function(filename, popup)
 			end
 		end
 
-		-- Sort by modification time (newest first)
 		table.sort(chat_entries, function(a, b)
 			return a.timestamp > b.timestamp
 		end)
 
-		-- Create display strings for FZF
 		local display_entries = {}
 		local path_map = {}
 		for _, entry in ipairs(chat_entries) do
-			-- That '\t entry.path' is for bat/cat preview
 			table.insert(display_entries, entry.display .. "\t" .. entry.path)
 			path_map[entry.display] = entry.path
 		end
 
-		-- Simple FZF options
 		local options = {
 			source = display_entries,
 			options = {
@@ -287,7 +279,6 @@ M.open_chat = function(filename, popup)
 			end,
 		}
 
-		-- If we have a preview command, attach it
 		if preview_cmd ~= "" then
 			table.insert(options.options, "--preview")
 			table.insert(options.options, preview_cmd)
@@ -295,7 +286,6 @@ M.open_chat = function(filename, popup)
 			table.insert(options.options, "right:60%")
 		end
 
-		-- Run FZF
 		vim.fn["fzf#run"](vim.fn["fzf#wrap"](options))
 	end
 
@@ -512,7 +502,7 @@ end
 
 local function generate_title(_messages, bufnr)
 	local messages = {
-		{ role = "system", content = "Write a short (1-5 words) title for this conversation:" },
+		{ role = "system", content = "Your task is to summarize the conversation into a title" },
 		_messages[2],
 		{
 			role = "user",
@@ -615,7 +605,6 @@ M.format_chat = function(bufnr)
 		local in_code_block = false
 		local in_list_item = false
 		local format_sections = {} -- inclusive, 1 indexed
-		local fix_backticks = {}
 
 		for i, line in ipairs(buf_lines) do
 			-- skip delimiter lines
@@ -660,23 +649,6 @@ M.format_chat = function(bufnr)
 			format_sections[#format_sections + 1] = { range_start, #buf_lines }
 		end
 
-		-- delete the backticks from that line, and insert them in a line below
-		-- for _, line in ipairs(fix_backticks) do
-		-- 	local line_content = buf_lines[line]
-		-- 	local new_content = line_content:gsub("```", "")
-		-- 	vim.api.nvim_buf_set_lines(bufnr, line - 1, line, false, { new_content })
-		-- 	-- insert a new line below, with backticks. do not overwrite existing content make a new line
-		-- 	vim.cmd("normal! " .. line .. "Go```")
-		--
-		-- 	-- fix all the ranges after this line to account for the new line
-		-- 	for _, section in ipairs(format_sections) do
-		-- 		if section[1] >= line then
-		-- 			section[1] = section[1] + 1
-		-- 			section[2] = section[2] + 1
-		-- 		end
-		-- 	end
-		-- end
-
 		-- format in reverse order so line numbers don't change
 		for i = #format_sections, 1, -1 do
 			if format_sections[i][1] > format_sections[i][2] then
@@ -695,7 +667,6 @@ M.format_chat = function(bufnr)
 		require("conform").format()
 
 		vim.api.nvim_buf_call(bufnr, function()
-			-- vim.cmd("normal! G")
 			vim.cmd("normal! `g")
 		end)
 	end)

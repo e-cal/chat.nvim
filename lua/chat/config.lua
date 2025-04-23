@@ -136,7 +136,7 @@ Your colleague will ask you various questions about their code and ask you to as
 Answer concisely and when asked for code avoid unnecessary verbose explanation.
 ]],
 		},
-		title_model = "meta-llama/llama-3.1-8b-instruct", -- model used to generate chat titles
+		title_model = "google/gemini-2.0-flash-lite-001", -- model used to generate chat titles
 		auto_scroll = true, -- scroll to bottom of chat when response is finished
 		auto_format = true, -- automatically format the chat on save
 		wrap = true, -- enable line wrap (j/k are bound to gj and gk in the chat buffer so line wrap doesn't suck)
