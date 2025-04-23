@@ -135,7 +135,7 @@ Answer concisely and when asked for code avoid unnecessary verbose explanation.
 		title_model = "meta-llama/llama-3.1-8b-instruct", -- model used to generate chat titles
 		auto_scroll = true, -- scroll to bottom of chat when response is finished
 		auto_format = true, -- automatically format the chat on save
-		wrap = false, -- enable line wrap (j/k are bound to gj and gk in the chat buffer so line wrap doesn't suck)
+		wrap = true, -- enable line wrap (j/k are bound to gj and gk in the chat buffer so line wrap doesn't suck)
 		scroll_on_focus = false, -- automatically scroll to the bottom when chat is focused
 		code_register = "c", -- register to use for yanking/pasting code
 		print_provider = false, -- print model and provider info when making requests
