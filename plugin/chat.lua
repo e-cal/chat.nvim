@@ -210,3 +210,13 @@ autocmd("QuitPre", { -- close chat windows when last non-chat buffer is closed
 	end,
 	nested = true,
 })
+
+autocmd("CursorMoved", {
+  group = chat_group,
+  pattern = "*.chat",
+  callback = function()
+    if config.opts.wrap then
+      require("chat.core").update_wrap(vim.api.nvim_get_current_buf())
+    end
+  end,
+})
