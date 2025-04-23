@@ -35,8 +35,8 @@ M.setup_buffer = function(bufnr)
 		vim.keymap.set("n", "k", "gk", key_opts)
 		vim.keymap.set("n", "^", "g^", key_opts)
 		vim.keymap.set("n", "$", "g$", key_opts)
-		vim.api.nvim_set_option_value("wrap", true, opts)
-		vim.api.nvim_set_option_value("linebreak", true, opts)
+		vim.api.nvim_set_option_value("wrap", true, { win = 0 })
+		vim.api.nvim_set_option_value("linebreak", true, { win = 0 })
 	elseif config.opts.auto_format then
 		vim.api.nvim_set_option_value("formatoptions", "t", opts)
 	end
