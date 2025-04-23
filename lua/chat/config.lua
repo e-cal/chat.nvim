@@ -17,6 +17,8 @@ M.default_model_maps = {
 		["gpt-4.5"] = "openai/gpt-4.5-preview",
 		["gemini-2.5"] = "google/gemini-2.5-pro-exp-03-25:free",
 		["gemini-2.5-pro"] = "google/gemini-2.5-pro-exp-03-25:free",
+		["grok"] = "x-ai/grok-3-beta",
+		["grok-mini"] = "x-ai/grok-3-mini-beta",
 	},
 	openai = {
 		["o1"] = "o1-2024-12-17",
