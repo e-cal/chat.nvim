@@ -132,6 +132,10 @@ cmd("ChatToggleFormatting", function()
 	require("chat").toggle_formatting()
 end, {})
 
+cmd("ChatFormat", function()
+	require("chat.actions").format_chat(vim.api.nvim_get_current_buf())
+end, {})
+
 -------------------------------------------------------------------------------
 --                               Auto Commands                               --
 -------------------------------------------------------------------------------
@@ -151,7 +155,7 @@ autocmd("BufEnter", {
 	group = chat_group,
 	pattern = "*.chat",
 	callback = function()
-		require("chat.core").setup_buffer(vim.api.nvim_get_current_buf())
+		require("chat").setup_buffer(vim.api.nvim_get_current_buf())
 	end,
 })
 
@@ -165,7 +169,7 @@ autocmd("BufWritePre", {
 	group = chat_group,
 	pattern = "*.chat",
 	callback = function()
-		require("chat.core").format_chat(vim.api.nvim_get_current_buf())
+		require("chat.actions").format_on_save(vim.api.nvim_get_current_buf())
 	end,
 })
 
@@ -216,7 +220,7 @@ autocmd("CursorMoved", {
   pattern = "*.chat",
   callback = function()
     if config.opts.wrap then
-      require("chat.core").update_wrap(vim.api.nvim_get_current_buf())
+      require("chat.buffer").update_wrap(vim.api.nvim_get_current_buf())
     end
   end,
 })

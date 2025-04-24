@@ -1,6 +1,5 @@
 local Popup = require("nui.popup")
 local config = require("chat.config")
-local chat = require("chat.core")
 
 local M = {}
 
@@ -144,7 +143,26 @@ M.open = function(size, direction)
 		end,
 	})
 
-	chat.popup_open(selection, ft)
+	-- chat.popup_open(selection, ft)
+
+    -- M.popup_open = function(selection, ft)
+    --     local new = false
+    --     if vim.fn.isdirectory(config.opts.dir) ~= 1 then
+    --         vim.fn.mkdir(config.opts.dir, "p")
+    --         new = true
+    --     elseif vim.fn.empty(vim.fn.readdir(config.opts.dir)) == 1 then
+    --         new = true
+    --     end
+    --
+    --     new = new or selection ~= ""
+    --
+    --     if new then
+    --         M.create_new_chat(selection, ft)
+    --     else
+    --         M.load_last_chat(selection, ft)
+    --     end
+    -- end
+
 end
 
 M.resize = function(size)
