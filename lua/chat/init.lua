@@ -3,6 +3,7 @@ local popup = require("chat.popup")
 local core = require("chat.core")
 local chat = require("chat.chat")
 local buffer = require("chat.buffer")
+local actions = require("chat.actions")
 
 local M = {}
 
@@ -44,13 +45,21 @@ function M.inline(context, model)
 	core.inline(context, model)
 end
 
+function M.format(bufnr)
+	actions.format_chat(bufnr)
+end
+
+function M.format_on_save(bufnr)
+	actions.format_on_save(bufnr)
+end
+
 function M.toggle_formatting()
 	if vim.g.chat_formatting then
 		vim.g.chat_formatting = false
-		print("[chat.nvim] Disabling formatting")
+        vim.notify("Disabled auto formatting")
 	else
 		vim.g.chat_formatting = true
-		print("[chat.nvim] Enabling formatting")
+        vim.notify("Enabled auto formatting")
 	end
 end
 

@@ -1,5 +1,6 @@
 local config = require("chat.config")
 local api = require("chat.api")
+local actions = require("chat.actions")
 
 local M = {}
 
@@ -38,11 +39,11 @@ local function parse_messages(bufnr)
 				if in_system and not in_chat and (#sys_message > 0 or line ~= "") then
 					if line:find("^" .. config.opts.delimiters.file) then
 						local filename = line:sub(config.opts.delimiters.file:len() + 1)
-						print("[chat.nvim] inserting file: " .. filename)
 						local file = io.open(filename, "r")
 						if not file then
-							print("[chat.nvim] error opening file: " .. filename)
+							vim.notify("error opening file: " .. filename, vim.log.levels.ERROR)
 						else
+						    vim.notify("injected file: " .. filename)
 							local file_content = file:read("*a")
 							local file_extension = filename:match("%.([^%.]+)$") or ""
 							file:close()
@@ -98,12 +99,12 @@ local function parse_messages(bufnr)
 			elseif role and (#content > 0 or line ~= "") then
 				if line:find("^" .. config.opts.delimiters.file) then -- insert file
 					local filename = line:sub(config.opts.delimiters.file:len() + 1)
-					print("[chat.nvim] inserting file: " .. filename)
 					-- insert the contents of the file
 					local file = io.open(filename, "r")
 					if not file then
-						print("[chat.nvim] error opening file: " .. filename)
+						vim.notify("error opening file: " .. filename, vim.log.levels.ERROR)
 					else
+					    vim.notify("injected file: " .. filename)
 						local file_content = file:read("*a")
 						local file_extension = filename:match("%.([^%.]+)$") or ""
 						file:close()
@@ -150,7 +151,7 @@ local function generate_title(_messages, bufnr)
 			return
 		else
 			local title = res.choices[1].message.content
-			print("[chat.nvim] Generated title: " .. title)
+			-- vim.notify("Generated title: " .. title)
 			vim.api.nvim_buf_set_lines(bufnr, 0, 1, false, { "# " .. title })
 		end
 	end
@@ -169,7 +170,7 @@ M.send_message = function()
 	local messages, model, temp, save_path = parse_messages(bufnr)
 
 	if messages[#messages].role == "user" and messages[#messages].content == "" then
-		print("[chat.nvim] Skipping empty user message")
+		vim.notify("Skipping empty user message", vim.log.levels.WARN)
 		return
 	end
 
@@ -183,18 +184,20 @@ M.send_message = function()
 	vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, { "", "", config.opts.delimiters.assistant, "", "" })
 
 	if buf_lines[1] == config.opts.default.title then
-		print("[chat.nvim] Generating title...")
 		generate_title(messages, bufnr)
 	end
 
 	local on_complete = function(err, _)
 		if err then
-			vim.api.nvim_err_writeln("[chat.nvim] Error streaming response: " .. err)
+			vim.notify("Error streaming response: " .. err, vim.log.levels.ERROR)
 		end
 
 		vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, { "", "", config.opts.delimiters.user, "", "" })
 
-		require("chat.actions").format_chat(bufnr)
+
+	    if vim.g.chat_formatting then
+		    actions.format_chat(bufnr)
+        end
 
 		if config.opts.auto_scroll then
 			vim.api.nvim_buf_call(bufnr, function()
@@ -304,7 +307,7 @@ end
 
 M.stop_generation = function()
 	vim.g.chat_stop_generation = true
-	print("[chat.nvim] Stopping generation")
+	vim.notify("Cancelled generation")
 end
 
 return M

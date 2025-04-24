@@ -6,7 +6,7 @@ local function get_api_key(provider)
 	local api_key_config = config.opts.api_keys[provider]
 	local api_key = type(api_key_config) == "function" and api_key_config() or api_key_config
 	if type(api_key) ~= "string" or api_key == "" then
-		print("Error: Missing " .. provider .. " API key")
+		vim.notify("Error: Missing " .. provider .. " API key", vim.log.levels.ERROR)
 	end
 	return api_key
 end
@@ -148,7 +148,7 @@ local function get_provider(model)
 			return provider_name
 		end
 	end
-	-- print("[chat.nvim] Missing provider for " .. model .. ". Using openrouter as fallback.")
+	vim.notfiy("Missing provider for " .. model .. ". Using openrouter as fallback.")
 	return "openrouter"
 end
 
@@ -157,7 +157,7 @@ end
 local function get_curl_args(messages, model, temp, save_path, stream)
 	local provider_name = get_provider(model)
 	if config.opts.print_provider then
-		print(string.format("Using %s via %s", model, provider_name))
+		vim.notify(string.format("Using %s via %s", model, provider_name))
 	end
 	local provider = providers[provider_name]
 	local url = provider.url
@@ -260,11 +260,9 @@ local function handle_complete(err, raw_chunks, on_complete)
 	on_complete(err, nil)
 end
 
--- M.request = function(messages, model, temp, save_path, bufnr, on_complete, stream_response, on_chunk)
 M.request = function(params)
 	assert(params.messages, "messages is required")
 	assert(params.model, "model is required")
-	-- assert(params.temp, "temp is required")
 	local args =
 		get_curl_args(params.messages, params.model, params.temp, params.save_path, params.stream_response or false)
 	-- print("request")

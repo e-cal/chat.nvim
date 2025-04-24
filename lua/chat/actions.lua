@@ -18,7 +18,7 @@ M.yank_code = function()
 				local start_row, start_col, end_row, end_col = child:range()
 				local content = vim.api.nvim_buf_get_text(0, start_row, start_col, end_row, end_col, {})
 				vim.fn.setreg(config.opts.code_register, table.concat(content, "\n"))
-				print("[chat.nvim] yanked code")
+				vim.notify("yanked code")
 				return
 			end
 		end

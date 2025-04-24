@@ -1,3 +1,4 @@
+local chat = require("chat")
 local config = require("chat.config")
 
 -------------------------------------------------------------------------------
@@ -20,7 +21,7 @@ cmd("ChatFocus", function(opts)
 			direction = arg
 		end
 	end
-	require("chat").focus(size, direction)
+	chat.focus(size, direction)
 end, {
 	nargs = "?",
 	complete = function()
@@ -29,7 +30,7 @@ end, {
 })
 
 cmd("ChatClose", function()
-	require("chat").close()
+	chat.close()
 end, {})
 
 cmd("ChatToggle", function(opts)
@@ -43,7 +44,7 @@ cmd("ChatToggle", function(opts)
 			direction = arg
 		end
 	end
-	require("chat").toggle(size, direction)
+	chat.toggle(size, direction)
 end, {
 	nargs = "?",
 	complete = function()
@@ -52,12 +53,12 @@ end, {
 })
 
 cmd("ChatNew", function()
-	require("chat").new_chat()
+	chat.new_chat()
 end, {})
 
 cmd("ChatOpen", function(opts)
 	local filename = opts.args ~= "" and opts.args or nil
-	require("chat").open(filename)
+	chat.open(filename)
 end, {
 	nargs = "?",
 	-- TODO: get the list of chat files using config for path
@@ -67,12 +68,12 @@ end, {
 })
 
 cmd("ChatDelete", function()
-	require("chat").delete()
+	chat.delete()
 end, {})
 
 cmd("ChatResize", function(opts)
 	local size = tonumber(opts.args)
-	require("chat").resize(size)
+	chat.resize(size)
 end, { nargs = 1 })
 
 cmd("ChatInline", function(opts)
@@ -93,7 +94,7 @@ cmd("ChatInline", function(opts)
 		model = opts.args
 	end
 
-	require("chat").inline(context, model)
+	chat.inline(context, model)
 end, {
 	nargs = "?",
 })
@@ -106,7 +107,7 @@ cmd("ChatReplace", function(opts)
 		vim.cmd("normal! gv")
 		vim.cmd('normal! "_d')
 	else
-		print("not in visual mode")
+		vim.notify("not in visual mode", vim.log.levels.ERROR)
 		return
 	end
 
@@ -115,25 +116,25 @@ cmd("ChatReplace", function(opts)
 		model = opts.args
 	end
 
-	require("chat").replace(context, model)
+	chat.replace(context, model)
 end, {
 	nargs = 1,
 })
 
 cmd("ChatSetupBuffer", function()
-	require("chat").setup_buffer()
+	chat.setup_buffer()
 end, {})
 
 cmd("ChatStop", function()
-	require("chat").stop()
+	chat.stop()
 end, {})
 
 cmd("ChatToggleFormatting", function()
-	require("chat").toggle_formatting()
+	chat.toggle_formatting()
 end, {})
 
 cmd("ChatFormat", function()
-	require("chat.actions").format_chat(vim.api.nvim_get_current_buf())
+    chat.format(vim.api.nvim_get_current_buf())
 end, {})
 
 -------------------------------------------------------------------------------
@@ -155,7 +156,7 @@ autocmd("BufEnter", {
 	group = chat_group,
 	pattern = "*.chat",
 	callback = function()
-		require("chat").setup_buffer(vim.api.nvim_get_current_buf())
+		chat.setup_buffer(vim.api.nvim_get_current_buf())
 	end,
 })
 
@@ -169,7 +170,7 @@ autocmd("BufWritePre", {
 	group = chat_group,
 	pattern = "*.chat",
 	callback = function()
-		require("chat.actions").format_on_save(vim.api.nvim_get_current_buf())
+		chat.format_on_save(vim.api.nvim_get_current_buf())
 	end,
 })
 
