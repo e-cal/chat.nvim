@@ -151,7 +151,7 @@ local function get_provider(model)
 		end
 	end
     -- print(string.format("Missing provider for %s. Using openrouter as fallback.", model))
-    vim.notfiy(string.format("Missing provider for %s. Using openrouter as fallback.", model))
+    -- vim.notfiy(string.format("Missing provider for %s. Using openrouter as fallback.", model))
 	return "openrouter"
 end
 
