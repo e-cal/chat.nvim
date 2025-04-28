@@ -27,6 +27,7 @@ end
 
 function M.toggle(size, direction)
 	popup.toggle(size, direction)
+    vim.notify("Toggle chat window")
 end
 
 function M.new_chat()

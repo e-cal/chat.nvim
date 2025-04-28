@@ -143,16 +143,17 @@ local function get_provider(model)
 	for provider_name, provider_data in pairs(providers) do
 		local model_map = config.model_maps[provider_name]
 		if model_map and model_map[model] ~= nil then
+            -- vim.notify(string.format("Using %s as provider for %s", provider_name, model))
 			return provider_name
 		elseif provider_data.match_pattern and model:find(provider_data.match_pattern) then
+            -- vim.notify(string.format("Using %s as provider for %s", provider_name, model))
 			return provider_name
 		end
 	end
-	vim.notfiy("Missing provider for " .. model .. ". Using openrouter as fallback.")
+    -- print(string.format("Missing provider for %s. Using openrouter as fallback.", model))
+    vim.notfiy(string.format("Missing provider for %s. Using openrouter as fallback.", model))
 	return "openrouter"
 end
-
--- Request logic
 
 local function get_curl_args(messages, model, temp, save_path, stream)
 	local provider_name = get_provider(model)

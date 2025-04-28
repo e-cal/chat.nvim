@@ -151,7 +151,7 @@ local function generate_title(_messages, bufnr)
 			return
 		else
 			local title = res.choices[1].message.content
-			-- vim.notify("Generated title: " .. title)
+			title = string.gsub(title, "[\n\r]", "")
 			vim.api.nvim_buf_set_lines(bufnr, 0, 1, false, { "# " .. title })
 		end
 	end
