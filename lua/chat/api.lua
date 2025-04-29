@@ -143,15 +143,15 @@ local function get_provider(model)
 	for provider_name, provider_data in pairs(providers) do
 		local model_map = config.model_maps[provider_name]
 		if model_map and model_map[model] ~= nil then
-            -- vim.notify(string.format("Using %s as provider for %s", provider_name, model))
+			-- vim.notify(string.format("Using %s as provider for %s", provider_name, model))
 			return provider_name
 		elseif provider_data.match_pattern and model:find(provider_data.match_pattern) then
-            -- vim.notify(string.format("Using %s as provider for %s", provider_name, model))
+			-- vim.notify(string.format("Using %s as provider for %s", provider_name, model))
 			return provider_name
 		end
 	end
-    -- print(string.format("Missing provider for %s. Using openrouter as fallback.", model))
-    -- vim.notfiy(string.format("Missing provider for %s. Using openrouter as fallback.", model))
+	-- print(string.format("Missing provider for %s. Using openrouter as fallback.", model))
+	-- vim.notfiy(string.format("Missing provider for %s. Using openrouter as fallback.", model))
 	return "openrouter"
 end
 
@@ -212,10 +212,9 @@ local function get_curl_args(messages, model, temp, save_path, stream)
 	return curl_args
 end
 
-local function handle_stream_chunk(chunk, bufnr, raw_chunks)
+local function handle_stream_chunk(chunk, bufnr, raw_chunks, state)
 	for chunk_json in chunk:gmatch("[^\n]+") do
 		local raw_json = string.gsub(chunk_json, "^data: ", "")
-		-- print(raw_json)
 		table.insert(raw_chunks, raw_json)
 
 		local ok, chunk_data = pcall(vim.json.decode, raw_json)
@@ -223,16 +222,32 @@ local function handle_stream_chunk(chunk, bufnr, raw_chunks)
 			goto continue
 		end
 
-		local chunk_content
-		if chunk_data.choices ~= nil then -- openai-style api
+		local function check_valid(content)
+			return content ~= nil and content ~= vim.NIL and content ~= ""
+		end
+
+		local chunk_content = nil
+		if chunk_data.choices ~= nil then
 			local chunk_delta = chunk_data.choices[1].delta
-			chunk_content = (
-				(not chunk_delta.content or chunk_delta.content == vim.NIL) and chunk_delta.reasoning_content
-			) or chunk_delta.content
-		elseif chunk_data.type == "content_block_delta" then -- anthropic api
+			if check_valid(chunk_delta.content) then
+				if state.is_reasoning then
+                    state.is_reasoning = false
+					chunk_content = "```\n\n" .. chunk_delta.content
+				else
+					chunk_content = chunk_delta.content
+				end
+			elseif check_valid(chunk_delta.reasoning) then
+				if not state.is_reasoning then
+                    state.is_reasoning = true
+					chunk_content = "```reasoning\n" .. chunk_delta.reasoning
+				else
+					chunk_content = chunk_delta.reasoning
+				end
+			end
+		elseif chunk_data.type == "content_block_delta" then
 			chunk_content = chunk_data.delta.text
 		end
-		if chunk_content == nil then
+		if chunk_content == nil or type(chunk_content) == "userdata" then
 			goto continue
 		end
 
@@ -275,6 +290,7 @@ M.request = function(params)
 
 	if stream_response then
 		local raw_chunks = {}
+        local state = { is_reasoning = false }
 		local on_stdout_chunk = function(chunk)
 			-- print("on_stdout_chunk")
 			-- P(chunk)
@@ -287,7 +303,7 @@ M.request = function(params)
 				-- print("using provided on_chunk function")
 				on_chunk(nil, chunk)
 			else
-				handle_stream_chunk(chunk, bufnr, raw_chunks)
+				handle_stream_chunk(chunk, bufnr, raw_chunks, state)
 			end
 		end
 
