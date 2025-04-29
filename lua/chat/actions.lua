@@ -1,4 +1,5 @@
 local config = require("chat.config")
+local api = require("chat.api")
 
 local M = {}
 
@@ -109,6 +110,94 @@ M.format_chat = function(bufnr)
 			vim.cmd("normal! `g")
 		end)
 	end)
+end
+
+M.complete_inline = function(context, _model)
+	local bufnr = vim.api.nvim_get_current_buf()
+	local cursor = vim.api.nvim_win_get_cursor(0)
+	local row, col = cursor[1] - 1, cursor[2]
+
+	local messages = {
+		{ role = "system", content = config.opts.inline.system_message },
+		{ role = "user", content = context },
+	}
+	-- P(messages)
+
+    local reasoning_start = false
+	local on_chunk = function(err, chunk)
+		if err then
+			vim.api.nvim_err_writeln("Error streaming response: " .. err)
+			return
+		end
+		if chunk then
+			for chunk_json in chunk:gmatch("[^\n]+") do
+				local raw_json = string.gsub(chunk_json, "^data: ", "")
+				local ok, chunk_data = pcall(vim.json.decode, raw_json)
+				if not ok then
+					goto continue
+				end
+
+				-- print("on_chunk")
+				-- P(chunk_data)
+
+				local chunk_content
+				if chunk_data.choices ~= nil then -- openai-style api
+					if chunk_data.choices[1].delta ~= nil then
+						chunk_content = chunk_data.choices[1].delta.content
+					else -- base model
+						chunk_content = chunk_data.choices[1].text
+					end
+				elseif chunk_data.type == "content_block_delta" then -- anthropic api
+					chunk_content = chunk_data.delta.text
+				end
+				if chunk_content == nil then
+					goto continue
+				end
+
+				local lines = vim.split(chunk_content, "\n")
+				for i, line in ipairs(lines) do
+					if i == 1 then
+						local current_line = vim.api.nvim_buf_get_lines(bufnr, row, row + 1, false)[1]
+						local new_line = current_line:sub(1, col) .. line .. current_line:sub(col + 1)
+						vim.api.nvim_buf_set_lines(bufnr, row, row + 1, false, { new_line })
+						col = col + #line
+					else
+						row = row + 1
+						vim.api.nvim_buf_set_lines(bufnr, row, row, false, { line })
+						col = #line
+					end
+				end
+				vim.api.nvim_win_set_cursor(0, { row + 1, col })
+
+				::continue::
+			end
+		end
+	end
+
+	local on_complete = function(err, _)
+		if err then
+			vim.api.nvim_err_writeln("Error completing inline response: " .. err)
+		end
+	end
+
+	local model
+	if _model == "default" then
+		model = config.opts.inline.instruct_model
+	elseif _model == "base" then
+		model = config.opts.inline.base_model
+	else
+		model = _model
+	end
+
+	api.request({
+		messages = messages,
+		model = model,
+		temp = config.opts.inline.temp,
+		bufnr = bufnr,
+		on_complete = on_complete,
+		stream_response = true,
+		on_chunk = on_chunk,
+	})
 end
 
 return M

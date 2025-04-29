@@ -43,7 +43,7 @@ function M.delete()
 end
 
 function M.inline(context, model)
-	core.inline(context, model)
+	actions.inline(context, model)
 end
 
 function M.format(bufnr)
