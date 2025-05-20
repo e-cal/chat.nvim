@@ -109,6 +109,7 @@ M.open = function(size, direction)
 	M.popup = Popup({
 		enter = true,
 		focusable = true,
+        zindex = 1,
 		border = {
 			style = "rounded",
 			text = {
