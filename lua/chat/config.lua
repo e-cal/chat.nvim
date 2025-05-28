@@ -29,28 +29,34 @@ M.default_model_maps = {
 		["o3-mini"] = "o3-mini-2025-01-31",
 	},
 	anthropic = {
-		-- claude 3 aliases
+		-- claude 3
 		["claude-3-haiku"] = "claude-3-haiku-20240307",
 		["claude-3-sonnet"] = "claude-3-sonnet-20240229",
 		["claude-3-opus"] = "claude-3-opus-20240229",
-		-- claude 3.5 aliases
+		-- claude 3.5
+        ["haiku"] = "claude-3-5-haiku-latest",
 		["claude-3.5-haiku"] = "claude-3-5-haiku-20241022",
 		["claude-3.5-haiku-latest"] = "claude-3-5-haiku-latest",
-		["claude-3.5-sonnet"] = "claude-3-5-sonnet-20240620",
+        ["claude-3.5-sonnet"] = "claude-3-5-sonnet-20240620",
 		-- new sonnet
 		["claude-3.5-sonnet-new"] = "claude-3-5-sonnet-20241022",
 		["claude-3.6-sonnet"] = "claude-3-5-sonnet-20241022",
 		["claude-3.5-sonnet-2"] = "claude-3-5-sonnet-20241022",
 		["claude-3.5-sonnet-latest"] = "claude-3-5-sonnet-latest",
+		["claude-3.5"] = "claude-3-5-sonnet-20241022",
+		["sonnet-3.5"] = "claude-3-5-sonnet-20241022",
 		-- 3.7 sonnet
 		["claude-3.7-sonnet"] = "claude-3-7-sonnet-20250219",
 		["claude-3.7-sonnet-latest"] = "claude-3-7-sonnet-latest",
-		-- versionless aliases
-		["claude"] = "claude-3-7-sonnet-latest",
-		["claude-sonnet"] = "claude-3-7-sonnet-latest",
-		["sonnet-latest"] = "claude-3-7-sonnet-latest",
-		["haiku"] = "claude-3-5-haiku-latest",
-		["claude-haiku"] = "claude-3-5-haiku-latest",
+		["claude-3.7"] = "claude-3-7-sonnet-20250219",
+		["sonnet-3.7"] = "claude-3-7-sonnet-20250219",
+        -- claude 4
+        ["opus"]  = "claude-opus-4-20250514",
+        ["claude-opus"]  = "claude-opus-4-20250514",
+        ["claude-4-opus"]  = "claude-opus-4-20250514",
+        ["sonnet"]  = "claude-sonnet-4-20250514",
+        ["sonnet-4"]  = "claude-sonnet-4-20250514",
+        ["claude-4-sonnet"]  = "claude-sonnet-4-20250514",
 	},
 	deepseek = {
 		["r1"] = "deepseek-reasoner",
