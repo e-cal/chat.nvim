@@ -37,12 +37,11 @@ M.default_model_maps = {
         ["haiku"] = "claude-3-5-haiku-latest",
 		["claude-3.5-haiku"] = "claude-3-5-haiku-20241022",
 		["claude-3.5-haiku-latest"] = "claude-3-5-haiku-latest",
-        ["claude-3.5-sonnet"] = "claude-3-5-sonnet-20240620",
+        ["sonnet-3.5-old"] = "claude-3-5-sonnet-20240620",
+        ["claude-3.5-sonnet-old"] = "claude-3-5-sonnet-20240620",
 		-- new sonnet
-		["claude-3.5-sonnet-new"] = "claude-3-5-sonnet-20241022",
+        ["claude-3.5-sonnet"] = "claude-3-5-sonnet-latest",
 		["claude-3.6-sonnet"] = "claude-3-5-sonnet-20241022",
-		["claude-3.5-sonnet-2"] = "claude-3-5-sonnet-20241022",
-		["claude-3.5-sonnet-latest"] = "claude-3-5-sonnet-latest",
 		["claude-3.5"] = "claude-3-5-sonnet-20241022",
 		["sonnet-3.5"] = "claude-3-5-sonnet-20241022",
 		-- 3.7 sonnet
