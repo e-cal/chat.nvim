@@ -17,6 +17,7 @@ M.default_model_maps = {
 		["gemini-2.0-pro"] = "google/gemini-2.0-pro-exp-02-05:free",
 		["gemini-2.0-flash"] = "google/gemini-2.0-flash-001",
 		["gemini-2.5-free"] = "google/gemini-2.5-pro-exp-03-25:free",
+		["gemini-2.5-pro-05"] = "google/google/gemini-2.5-pro-preview-05-06",
 		["gemini-2.5-pro"] = "google/gemini-2.5-pro-preview",
 		["gemini-pro"] = "google/gemini-2.5-pro-preview",
 		["gemini-flash"] = "google/gemini-2.5-flash-preview",
@@ -134,7 +135,7 @@ M.defaults = function()
 		},
 		default = { -- default values for chat parameters (overwritten if changed inline in chat)
 			title = "# New Chat",
-			model = "claude-3.7-sonnet",
+			model = "sonnet-4",
 			temp = 0.8, -- model temperature
 			system_message = [[You are an expert programmer working alongside an expert colleague. 
 Your colleague will ask you various questions about their code and ask you to assist with some coding tasks. 
@@ -173,7 +174,7 @@ Answer concisely and when asked for code avoid unnecessary verbose explanation.
 		},
 		inline = {
 			base_model = "llama-3.1-405b-base",
-			instruct_model = "claude-3.7-sonnet",
+			instruct_model = "sonnet-4",
 			system_message = [[You are an expert programmer working alongside an expert colleague. 
 You will be given code snippets. 
 Interpret comments as instructions on code that needs to be written if there isn't already code addressing the comment or if the comment requests refactoring.
