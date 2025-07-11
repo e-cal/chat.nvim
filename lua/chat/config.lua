@@ -22,8 +22,11 @@ M.default_model_maps = {
 		["gemini-pro"] = "google/gemini-2.5-pro-preview",
 		["gemini-flash"] = "google/gemini-2.5-flash-preview",
 		["gemini-flash-thinking"] = "google/gemini-2.0-flash-thinking-exp:free",
-		["grok"] = "x-ai/grok-3-beta",
+		["grok-3"] = "x-ai/grok-3",
+		["grok-4"] = "x-ai/grok-4",
 		["grok-mini"] = "x-ai/grok-3-mini-beta",
+        ["devstral"] = "mistralai/devstral-medium",
+        ["devstral-small"] = "mistralai/devstral-small",
 	},
 	openai = {
 		["o1"] = "o1-2024-12-17",
