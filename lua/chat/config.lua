@@ -27,6 +27,7 @@ M.default_model_maps = {
 		["grok-mini"] = "x-ai/grok-3-mini-beta",
         ["devstral"] = "mistralai/devstral-medium",
         ["devstral-small"] = "mistralai/devstral-small",
+        ["k2"] = "moonshotai/kimi-k2",
 	},
 	openai = {
 		["o1"] = "o1-2024-12-17",
