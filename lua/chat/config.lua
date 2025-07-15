@@ -76,6 +76,7 @@ M.default_model_maps = {
 		["llama-3.1-8b"] = "llama-3.1-8b-instant",
 		["llama-3.1-70b"] = "llama-3.1-70b-versatile",
 		["groq/r1"] = "deepseek-r1-distill-llama-70b",
+		["groq/k2"] = "moonshotai/kimi-k2-instruct",
 	},
 	cerebras = {
 		["cerebras/llama-3.1-8b"] = "llama-3.1-8b",
