@@ -2,7 +2,7 @@ local M = {}
 
 -- Users can provide custom mappings of model alias to api model name
 -- can also be used to set the provider for a model (e.g. aliasing a gpt model to openrouter to use that over the openai api)
-M.default_model_maps = {
+M.default_model_aliases = {
 	openrouter = {
 		-- ["o1"] = "openai/o1",
         -- ["o1-pro"] = "openai/o1-pro",
@@ -198,10 +198,10 @@ end
 M.setup = function(opts)
 	opts = opts or {}
 	M.opts = vim.tbl_deep_extend("force", {}, M.defaults(), opts)
-	M.model_maps = vim.deepcopy(M.default_model_maps)
+	M.model_aliases = vim.deepcopy(M.default_model_aliases)
 	if opts.model_maps then
 		for provider, model_map in pairs(opts.model_maps) do
-			M.model_maps[provider] = vim.tbl_deep_extend("force", M.model_maps[provider] or {}, model_map)
+			M.model_aliases[provider] = vim.tbl_deep_extend("force", M.model_aliases[provider] or {}, model_map)
 		end
 	end
 end

@@ -141,8 +141,8 @@ end
 
 local function get_provider(model)
 	for provider_name, provider_data in pairs(providers) do
-		local model_map = config.model_maps[provider_name]
-		if model_map and model_map[model] ~= nil then
+		local model_aliases = config.model_aliases[provider_name]
+		if model_aliases and model_aliases[model] ~= nil then
 			-- vim.notify(string.format("Using %s as provider for %s", provider_name, model))
 			return provider_name
 		elseif provider_data.match_pattern and model:find(provider_data.match_pattern) then
@@ -169,7 +169,7 @@ local function get_curl_args(messages, model, temp, save_path, stream)
 		headers = default_headers(provider_name)
 	end
 
-	local model_map = config.model_maps[provider_name]
+	local model_map = config.model_aliases[provider_name]
 	if model_map then
 		for key, value in pairs(model_map) do
 			if model == key or model == value then
