@@ -166,7 +166,7 @@ Answer concisely and when asked for code avoid unnecessary verbose explanation.
 			settings = "## Settings",
 			model = "> Model: ",
 			temp = "> Temperature: ",
-			system = "> System Message",
+			system = "> System:",
 			chat = "## Chat",
 			user = "### User",
 			assistant = "### Assistant",
