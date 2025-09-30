@@ -16,6 +16,8 @@ local function default_headers(provider)
 	return {
 		["Content-Type"] = "application/json",
 		["Authorization"] = "Bearer " .. api_key,
+		["X-Title"] = "chat.nvim",
+		["HTTP-Referer"] = "https://github.com/e-cal/chat.nvim",
 	}
 end
 
@@ -231,14 +233,14 @@ local function handle_stream_chunk(chunk, bufnr, raw_chunks, state)
 			local chunk_delta = chunk_data.choices[1].delta
 			if check_valid(chunk_delta.content) then
 				if state.is_reasoning then
-                    state.is_reasoning = false
+					state.is_reasoning = false
 					chunk_content = "```\n\n" .. chunk_delta.content
 				else
 					chunk_content = chunk_delta.content
 				end
 			elseif check_valid(chunk_delta.reasoning) then
 				if not state.is_reasoning then
-                    state.is_reasoning = true
+					state.is_reasoning = true
 					chunk_content = "```reasoning\n" .. chunk_delta.reasoning
 				else
 					chunk_content = chunk_delta.reasoning
@@ -290,7 +292,7 @@ M.request = function(params)
 
 	if stream_response then
 		local raw_chunks = {}
-        local state = { is_reasoning = false }
+		local state = { is_reasoning = false }
 		local on_stdout_chunk = function(chunk)
 			-- print("on_stdout_chunk")
 			-- P(chunk)
