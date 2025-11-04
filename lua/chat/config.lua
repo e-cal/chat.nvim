@@ -61,6 +61,7 @@ M.default_model_aliases = {
         ["sonnet"]  = "claude-sonnet-4-20250514",
         ["sonnet-4"]  = "claude-sonnet-4-20250514",
         ["claude-4-sonnet"]  = "claude-sonnet-4-20250514",
+        ["sonnet-4.5"] = "claude-sonnet-4-5",
 	},
 	deepseek = {
 		["r1"] = "deepseek-reasoner",
