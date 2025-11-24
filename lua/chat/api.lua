@@ -2,6 +2,17 @@ local config = require("chat.config")
 
 local M = {}
 
+local function log_debug(message)
+	if not config.opts.debug then
+		return
+	end
+	local log_file = io.open("/tmp/chat-nvim-debug.log", "a")
+	if log_file then
+		log_file:write(os.date("%Y-%m-%d %H:%M:%S") .. " [api.lua] " .. message .. "\n")
+		log_file:close()
+	end
+end
+
 local function get_api_key(provider)
 	local api_key_config = config.opts.api_keys[provider]
 	local api_key = type(api_key_config) == "function" and api_key_config() or api_key_config
@@ -83,14 +94,6 @@ local providers = {
 			return data
 		end,
 	},
-	entropix = {
-		url = "127.0.0.1:1337/v1/chat/completions",
-		headers = function()
-			return {
-				["Content-Type"] = "application/json",
-			}
-		end,
-	},
 }
 
 local function exec(cmd, args, on_stdout, on_complete)
@@ -157,7 +160,7 @@ local function get_provider(model)
 	return "openrouter"
 end
 
-local function get_curl_args(messages, model, temp, save_path, stream)
+local function get_curl_args(messages, model, temp, reasoning, stream)
 	local provider_name = get_provider(model)
 	if config.opts.print_provider then
 		vim.notify(string.format("Using %s via %s", model, provider_name))
@@ -181,16 +184,68 @@ local function get_curl_args(messages, model, temp, save_path, stream)
 		end
 	end
 
+	-- Transform messages to include reasoning when present
+	local api_messages = {}
+	for _, msg in ipairs(messages) do
+		if msg.reasoning_details then
+			-- Pass complete reasoning_details object as per OpenRouter docs
+			table.insert(api_messages, {
+				role = msg.role,
+				content = msg.content,
+				reasoning_details = msg.reasoning_details,
+			})
+		elseif msg.reasoning_content then
+			-- Fallback: manual content array format
+			local content_array = {
+				{
+					type = "reasoning",
+					reasoning = msg.reasoning_content.reasoning,
+				},
+				{
+					type = "text",
+					text = msg.content,
+				},
+			}
+			if msg.reasoning_content.signature then
+				content_array[1].signature = msg.reasoning_content.signature
+			end
+			table.insert(api_messages, {
+				role = msg.role,
+				content = content_array,
+			})
+		else
+			-- Regular message without reasoning
+			table.insert(api_messages, {
+				role = msg.role,
+				content = msg.content,
+			})
+		end
+	end
+
 	local data = {
 		stream = stream,
-		messages = messages,
+		messages = api_messages,
 		model = model,
 	}
 	if temp ~= nil then
 		data.temperature = temp
 	end
-	if save_path then
-		data.save_path = save_path
+
+	-- Only apply reasoning parameter for openrouter provider
+	if reasoning ~= nil and provider_name == "openrouter" then
+		-- Map simple string values to effort levels
+		local reasoning_map = {
+			high = "high",
+			medium = "medium",
+			low = "low",
+			min = "minimal",
+			minimal = "minimal",
+			none = "none",
+		}
+		local effort = reasoning_map[reasoning:lower()]
+		if effort and effort ~= "none" then
+			data.reasoning = { effort = effort }
+		end
 	end
 
 	if provider.prepare_data then
@@ -207,7 +262,9 @@ local function get_curl_args(messages, model, temp, save_path, stream)
 		table.insert(curl_args, string.format("%s: %s", k, v))
 	end
 
-	-- P(data)
+	if config.opts.debug then
+		log_debug("Request data: " .. vim.inspect(data))
+	end
 	table.insert(curl_args, "--data")
 	table.insert(curl_args, vim.json.encode(data))
 
@@ -231,20 +288,45 @@ local function handle_stream_chunk(chunk, bufnr, raw_chunks, state)
 		local chunk_content = nil
 		if chunk_data.choices ~= nil then
 			local chunk_delta = chunk_data.choices[1].delta
-			if check_valid(chunk_delta.content) then
-				if state.is_reasoning then
-					state.is_reasoning = false
-					chunk_content = "```\n\n" .. chunk_delta.content
-				else
-					chunk_content = chunk_delta.content
+
+			-- Check for signature in reasoning_details
+			if chunk_delta.reasoning_details and type(chunk_delta.reasoning_details) == "table" then
+				for _, detail in ipairs(chunk_delta.reasoning_details) do
+					if detail.signature and detail.signature ~= "" then
+						state.reasoning_signature = detail.signature
+						-- Close reasoning block and write signature comment
+						if state.reasoning_started and not state.reasoning_finished then
+							state.reasoning_finished = true
+							vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, { 
+								"````",
+								"<!-- REASONING_SIGNATURE: " .. detail.signature .. " -->",
+								"",
+							})
+							-- Store the complete reasoning_details object
+							state.reasoning_details_obj = chunk_delta.reasoning_details
+						end
+						goto continue
+					end
 				end
-			elseif check_valid(chunk_delta.reasoning) then
-				if not state.is_reasoning then
-					state.is_reasoning = true
-					chunk_content = "```reasoning\n" .. chunk_delta.reasoning
-				else
-					chunk_content = chunk_delta.reasoning
+			end
+
+			-- Stream reasoning text as it arrives
+			if chunk_delta.reasoning and check_valid(chunk_delta.reasoning) then
+				-- First reasoning chunk - write the opening code fence
+				if not state.reasoning_started then
+					state.reasoning_started = true
+					vim.api.nvim_buf_set_lines(bufnr, -2, -1, false, { "````reasoning", "" })
 				end
+				-- Write reasoning chunk directly to buffer
+				chunk_content = chunk_delta.reasoning
+			elseif check_valid(chunk_delta.content) then
+				-- First content chunk means reasoning is complete (if no signature came)
+				if state.reasoning_started and not state.reasoning_finished then
+					-- Close the reasoning code block
+					state.reasoning_finished = true
+					vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, { "````", "", "" })
+				end
+				chunk_content = chunk_delta.content
 			end
 		elseif chunk_data.type == "content_block_delta" then
 			chunk_content = chunk_data.delta.text
@@ -266,25 +348,70 @@ local function handle_stream_chunk(chunk, bufnr, raw_chunks, state)
 	end
 end
 
-local function handle_complete(err, raw_chunks, on_complete)
-	local total_message = table.concat(raw_chunks, "")
-	local ok, json = pcall(vim.json.decode, total_message)
-	if ok then
-		if json.error ~= nil then
-			on_complete(json.error.message, nil)
-			return
+local function handle_complete(err, raw_chunks, on_complete, state)
+	-- Use the reasoning_details object we stored during streaming (has complete signature)
+	local reasoning_details = state.reasoning_details_obj
+
+	-- If we didn't capture it during streaming, try to find it in chunks
+	if not reasoning_details then
+		for i = #raw_chunks, 1, -1 do
+			local ok, chunk_data = pcall(vim.json.decode, raw_chunks[i])
+			if ok then
+				if config.opts.debug and chunk_data.choices then
+					log_debug("Chunk " .. i .. " structure: " .. vim.inspect(chunk_data.choices[1]))
+				end
+
+				-- Check in choices
+				if chunk_data.choices and chunk_data.choices[1] then
+					local choice = chunk_data.choices[1]
+					-- Check message (final chunk in streaming)
+					if choice.message and choice.message.reasoning_details then
+						reasoning_details = choice.message.reasoning_details
+						if config.opts.debug then
+							log_debug("Found reasoning_details in message")
+						end
+						break
+					end
+					-- Check delta (streaming chunks with signature)
+					if choice.delta and choice.delta.reasoning_details then
+						for _, detail in ipairs(choice.delta.reasoning_details) do
+							if detail.signature and detail.signature ~= "" then
+								reasoning_details = choice.delta.reasoning_details
+								if config.opts.debug then
+									log_debug("Found reasoning_details with signature in delta")
+								end
+								break
+							end
+						end
+					end
+				end
+			end
 		end
 	end
-	on_complete(err, nil)
+
+	-- Check for errors
+	local total_message = table.concat(raw_chunks, "")
+	local ok, json = pcall(vim.json.decode, total_message)
+	if ok and json.error ~= nil then
+		on_complete(json.error.message, nil)
+		return
+	end
+
+	if config.opts.debug then
+		log_debug("handle_complete returning reasoning_details: " .. vim.inspect(reasoning_details))
+	end
+
+	on_complete(err, reasoning_details)
 end
 
 M.request = function(params)
 	assert(params.messages, "messages is required")
 	assert(params.model, "model is required")
 	local args =
-		get_curl_args(params.messages, params.model, params.temp, params.save_path, params.stream_response or false)
-	-- print("request")
-	-- P(args)
+		get_curl_args(params.messages, params.model, params.temp, params.reasoning, params.stream_response or false)
+	if config.opts.debug then
+		log_debug("Request args: " .. vim.inspect(args))
+	end
 	local stream_response = params.stream_response or false
 	local bufnr = params.bufnr
 	local on_complete = params.on_complete
@@ -292,17 +419,20 @@ M.request = function(params)
 
 	if stream_response then
 		local raw_chunks = {}
-		local state = { is_reasoning = false }
+		local state = {}
 		local on_stdout_chunk = function(chunk)
-			-- print("on_stdout_chunk")
-			-- P(chunk)
+			if config.opts.debug then
+				log_debug("Received chunk: " .. vim.inspect(chunk))
+			end
 
 			if vim.g.chat_stop_generation then
 				vim.g.chat_stop_generation = false
 				return true
 			end
 			if on_chunk then
-				-- print("using provided on_chunk function")
+				if config.opts.debug then
+					log_debug("Using provided on_chunk function")
+				end
 				on_chunk(nil, chunk)
 			else
 				handle_stream_chunk(chunk, bufnr, raw_chunks, state)
@@ -310,14 +440,20 @@ M.request = function(params)
 		end
 
 		local _on_complete = function(err, _)
-			handle_complete(err, raw_chunks, on_complete)
+			if err then
+				on_complete(err, nil)
+			else
+				handle_complete(err, raw_chunks, on_complete, state)
+			end
 		end
 
 		exec("curl", args, on_stdout_chunk, _on_complete)
 	else
 		local on_stdout = function(response_body)
 			local ok, response = pcall(vim.json.decode, response_body)
-			-- P(response)
+			if config.opts.debug then
+				log_debug("Response: " .. vim.inspect(response))
+			end
 			if not ok then
 				on_complete("Failed to parse response JSON: " .. response_body)
 				return

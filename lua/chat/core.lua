@@ -4,6 +4,17 @@ local actions = require("chat.actions")
 
 local M = {}
 
+local function log_debug(message)
+	if not config.opts.debug then
+		return
+	end
+	local log_file = io.open("/tmp/chat-nvim-debug.log", "a")
+	if log_file then
+		log_file:write(os.date("%Y-%m-%d %H:%M:%S") .. " [core.lua] " .. message .. "\n")
+		log_file:close()
+	end
+end
+
 local function parse_messages(bufnr)
 	local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
 	local messages = {}
@@ -11,12 +22,18 @@ local function parse_messages(bufnr)
 	local content = {}
 	local model = config.opts.default.model
 	local temp = nil
-	local save_path = nil
+	local reasoning = nil
 
 	local in_system = false
 	local sys_message = {}
 
 	local in_chat = false
+
+	-- Reasoning parsing state
+	local in_reasoning_block = false
+	local reasoning_lines = {}
+	local current_reasoning = nil
+	local reasoning_signature = nil
 
 	for _, line in ipairs(lines) do
 		if not in_chat then
@@ -24,15 +41,8 @@ local function parse_messages(bufnr)
 				model = line:sub(config.opts.delimiters.model:len() + 1)
 			elseif line:find("^" .. config.opts.delimiters.temp) then
 				temp = tonumber(line:sub(config.opts.delimiters.temp:len() + 1))
-			elseif line:find("^" .. config.opts.delimiters.entropix_save_path) then
-				-- make it substitute "./" with the current directory
-				save_path = line:sub(config.opts.delimiters.entropix_save_path:len() + 1)
-
-				-- Get the current directory
-				local current_dir = vim.fn.getcwd()
-
-				-- Substitute "./" with the current directory
-				save_path = save_path:gsub("^%./", current_dir .. "/")
+			elseif line:find("^" .. config.opts.delimiters.reasoning) then
+				reasoning = vim.trim(line:sub(config.opts.delimiters.reasoning:len() + 1))
 			else
 				in_chat = line == config.opts.delimiters.chat
 
@@ -43,7 +53,7 @@ local function parse_messages(bufnr)
 						if not file then
 							vim.notify("error opening file: " .. filename, vim.log.levels.ERROR)
 						else
-						    vim.notify("injected file: " .. filename)
+							vim.notify("injected file: " .. filename)
 							local file_content = file:read("*a")
 							local file_extension = filename:match("%.([^%.]+)$") or ""
 							file:close()
@@ -78,7 +88,26 @@ local function parse_messages(bufnr)
 					while #content > 0 and content[#content] == "" do
 						table.remove(content, #content)
 					end
-					table.insert(messages, { role = role, content = table.concat(content, " \n ") })
+					local message = { role = role, content = table.concat(content, " \n ") }
+					if current_reasoning and reasoning_signature then
+						-- Reconstruct reasoning_details from parsed data
+						message.reasoning_details = {
+							{
+								type = "reasoning.text",
+								text = current_reasoning,
+								signature = reasoning_signature,
+								format = "anthropic-claude-v1",
+								index = 0,
+							},
+						}
+						current_reasoning = nil
+						reasoning_signature = nil
+					elseif current_reasoning then
+						-- Fallback if only text reasoning was found
+						message.reasoning_content = { reasoning = current_reasoning }
+						current_reasoning = nil
+					end
+					table.insert(messages, message)
 				end
 				role = "user"
 				content = {}
@@ -90,10 +119,42 @@ local function parse_messages(bufnr)
 					while #content > 0 and content[#content] == "" do
 						table.remove(content, #content)
 					end
-					table.insert(messages, { role = role, content = table.concat(content, " \n ") })
+					local message = { role = role, content = table.concat(content, " \n ") }
+					if current_reasoning and reasoning_signature then
+						message.reasoning_details = {
+							{
+								type = "reasoning.text",
+								text = current_reasoning,
+								signature = reasoning_signature,
+								format = "anthropic-claude-v1",
+								index = 0,
+							},
+						}
+						current_reasoning = nil
+						reasoning_signature = nil
+					elseif current_reasoning then
+						message.reasoning_content = { reasoning = current_reasoning }
+						current_reasoning = nil
+					end
+					table.insert(messages, message)
 				end
 				role = "assistant"
 				content = {}
+
+		-- check for reasoning code blocks (4 backticks)
+		elseif role and line:match("^````reasoning$") then
+			in_reasoning_block = true
+			reasoning_lines = {}
+		elseif role and in_reasoning_block and line:match("^````$") then
+			in_reasoning_block = false
+			current_reasoning = table.concat(reasoning_lines, "\n")
+			reasoning_lines = {}
+		elseif role and in_reasoning_block then
+			table.insert(reasoning_lines, line)
+
+		-- check for reasoning signature comment (single line)
+		elseif role and line:match("^<!%-%- REASONING_SIGNATURE: .+ %-%->$") then
+			reasoning_signature = line:match("^<!%-%- REASONING_SIGNATURE: (.+) %-%->$")
 
 			-- add line to current message content
 			elseif role and (#content > 0 or line ~= "") then
@@ -104,7 +165,7 @@ local function parse_messages(bufnr)
 					if not file then
 						vim.notify("error opening file: " .. filename, vim.log.levels.ERROR)
 					else
-					    vim.notify("injected file: " .. filename)
+						vim.notify("injected file: " .. filename)
 						local file_content = file:read("*a")
 						local file_extension = filename:match("%.([^%.]+)$") or ""
 						file:close()
@@ -126,12 +187,26 @@ local function parse_messages(bufnr)
 		while #content > 0 and content[#content] == "" do
 			table.remove(content, #content)
 		end
-		table.insert(messages, { role = role, content = table.concat(content, "\n") })
+		local message = { role = role, content = table.concat(content, "\n") }
+		if current_reasoning and reasoning_signature then
+			message.reasoning_details = {
+				{
+					type = "reasoning.text",
+					text = current_reasoning,
+					signature = reasoning_signature,
+					format = "anthropic-claude-v1",
+					index = 0,
+				},
+			}
+		elseif current_reasoning then
+			message.reasoning_content = { reasoning = current_reasoning }
+		end
+		table.insert(messages, message)
 	end
 
 	-- P(messages)
 
-	return messages, model, temp, save_path
+	return messages, model, temp, reasoning
 end
 
 local function generate_title(_messages, bufnr)
@@ -167,7 +242,7 @@ end
 
 M.send_message = function()
 	local bufnr = vim.api.nvim_get_current_buf()
-	local messages, model, temp, save_path = parse_messages(bufnr)
+	local messages, model, temp, reasoning = parse_messages(bufnr)
 
 	if messages[#messages].role == "user" and messages[#messages].content == "" then
 		vim.notify("Skipping empty user message", vim.log.levels.WARN)
@@ -187,17 +262,24 @@ M.send_message = function()
 		generate_title(messages, bufnr)
 	end
 
-	local on_complete = function(err, _)
+	local on_complete = function(err, reasoning_details)
 		if err then
 			vim.notify("Error streaming response: " .. err, vim.log.levels.ERROR)
 		end
 
+		-- Debug: Check if we received reasoning_details
+		if config.opts.debug then
+			log_debug("Received reasoning_details: " .. vim.inspect(reasoning_details))
+		end
+
+		-- Reasoning and signature are already written to buffer during streaming
+		-- No need to write anything here
+
 		vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, { "", "", config.opts.delimiters.user, "", "" })
 
-
-	    if vim.g.chat_formatting then
-		    actions.format_chat(bufnr)
-        end
+		if vim.g.chat_formatting then
+			actions.format_chat(bufnr)
+		end
 
 		if config.opts.auto_scroll then
 			vim.api.nvim_buf_call(bufnr, function()
@@ -211,7 +293,7 @@ M.send_message = function()
 		messages = messages,
 		model = model,
 		temp = temp,
-		save_path = save_path,
+		reasoning = reasoning,
 		bufnr = bufnr,
 		on_complete = on_complete,
 		stream_response = true,

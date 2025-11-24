@@ -27,6 +27,8 @@ M.create_new_chat = function(selection, ft)
 		"",
 		config.opts.delimiters.temp .. config.opts.default.temp,
 		"",
+		'<!--' .. config.opts.delimiters.reasoning .. 'medium -->',
+		"",
 		config.opts.delimiters.system,
 		"",
 		config.opts.default.system_message:gsub("\n", " "),

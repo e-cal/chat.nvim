@@ -4,69 +4,30 @@ local M = {}
 -- can also be used to set the provider for a model (e.g. aliasing a gpt model to openrouter to use that over the openai api)
 M.default_model_aliases = {
 	openrouter = {
-		-- ["o1"] = "openai/o1",
-        -- ["o1-pro"] = "openai/o1-pro",
-		-- ["o1-mini"] = "openai/o1-mini",
-		-- ["o3-mini"] = "openai/o3-mini",
-		-- ["o3-mini-high"] = "openai/o3-mini-high",
-        -- ["o3"] = "openai/o3",
-        -- ["o4-mini"] = "openai/o4-mini",
-        -- ["gpt-4.1"] = "openai/gpt-4.1",
-        -- ["gpt-4.5"] = "openai/gpt-4.5-preview",
-		["openrouter/r1"] = "deepseek/deepseek-r1",
-		["gemini-2.0-pro"] = "google/gemini-2.0-pro-exp-02-05:free",
-		["gemini-2.0-flash"] = "google/gemini-2.0-flash-001",
-		["gemini-2.5-free"] = "google/gemini-2.5-pro-exp-03-25:free",
-		["gemini-2.5-pro-05"] = "google/google/gemini-2.5-pro-preview-05-06",
-		["gemini-2.5-pro"] = "google/gemini-2.5-pro-preview",
-		["gemini-pro"] = "google/gemini-2.5-pro",
+		["k2"] = "moonshotai/kimi-k2",
+		["deepseek"] = "deepseek/deepseek-v3.2-exp",
+        ["qwen"] = "qwen/qwen3-235b-a22b-2507",
+        ["glm"] = "z-ai/glm-4.6",
+
 		["gemini-flash"] = "google/gemini-2.5-flash",
-		["gemini-flash-thinking"] = "google/gemini-2.0-flash-thinking-exp:free",
-		["grok-3"] = "x-ai/grok-3",
-		["grok-4"] = "x-ai/grok-4",
-		["grok-mini"] = "x-ai/grok-3-mini-beta",
-        ["devstral"] = "mistralai/devstral-medium",
-        ["devstral-small"] = "mistralai/devstral-small",
-        ["k2"] = "moonshotai/kimi-k2",
-	},
-	openai = {
-		["o1"] = "o1-2024-12-17",
-		["o3-mini"] = "o3-mini-2025-01-31",
+		["gemini-3"] = "google/gemini-3-pro-preview",
+
+		["grok"] = "x-ai/grok-4",
+        ["grok-4-fast"] = "x-ai/grok-4-fast",
+        ["grok-code"] = "x-ai/grok-code-fast-1",
+
+		["devstral"] = "mistralai/devstral-medium",
+		["devstral-small"] = "mistralai/devstral-small",
+
 	},
 	anthropic = {
-		-- claude 3
-		["claude-3-haiku"] = "claude-3-haiku-20240307",
-		["claude-3-sonnet"] = "claude-3-sonnet-20240229",
-		["claude-3-opus"] = "claude-3-opus-20240229",
-		-- claude 3.5
-        ["haiku"] = "claude-3-5-haiku-latest",
-		["claude-3.5-haiku"] = "claude-3-5-haiku-20241022",
-		["claude-3.5-haiku-latest"] = "claude-3-5-haiku-latest",
-        ["sonnet-3.5-old"] = "claude-3-5-sonnet-20240620",
-        ["claude-3.5-sonnet-old"] = "claude-3-5-sonnet-20240620",
-		-- new sonnet
-        ["claude-3.5-sonnet"] = "claude-3-5-sonnet-latest",
-		["claude-3.6-sonnet"] = "claude-3-5-sonnet-20241022",
-		["claude-3.5"] = "claude-3-5-sonnet-20241022",
-		["sonnet-3.5"] = "claude-3-5-sonnet-20241022",
-		-- 3.7 sonnet
-		["claude-3.7-sonnet"] = "claude-3-7-sonnet-20250219",
-		["claude-3.7-sonnet-latest"] = "claude-3-7-sonnet-latest",
-		["claude-3.7"] = "claude-3-7-sonnet-20250219",
-		["sonnet-3.7"] = "claude-3-7-sonnet-20250219",
-        -- claude 4
-        ["opus"]  = "claude-opus-4-20250514",
-        ["claude-opus"]  = "claude-opus-4-20250514",
-        ["claude-4-opus"]  = "claude-opus-4-20250514",
-        ["sonnet"]  = "claude-sonnet-4-20250514",
-        ["sonnet-4"]  = "claude-sonnet-4-20250514",
-        ["claude-4-sonnet"]  = "claude-sonnet-4-20250514",
-        ["sonnet-4.5"] = "claude-sonnet-4-5",
-	},
-	deepseek = {
-		["r1"] = "deepseek-reasoner",
-		["deepseek-v3"] = "deepseek-chat",
-		["deepseek-chat"] = "deepseek-chat",
+		["opus"] = "claude-opus-4-20250514",
+		["claude-opus"] = "claude-opus-4-20250514",
+		["claude-4-opus"] = "claude-opus-4-20250514",
+		["sonnet"] = "claude-sonnet-4-20250514",
+		["sonnet-4"] = "claude-sonnet-4-20250514",
+		["claude-4-sonnet"] = "claude-sonnet-4-20250514",
+		["sonnet-4.5"] = "claude-sonnet-4-5",
 	},
 	groq = {
 		["llama3-8b"] = "llama3-8b-8192",
@@ -78,31 +39,6 @@ M.default_model_aliases = {
 		["llama-3.1-70b"] = "llama-3.1-70b-versatile",
 		["groq/r1"] = "deepseek-r1-distill-llama-70b",
 		["groq/k2"] = "moonshotai/kimi-k2-instruct",
-	},
-	cerebras = {
-		["cerebras/llama-3.1-8b"] = "llama-3.1-8b",
-		["cerebras/llama-3.1-70b"] = "llama-3.1-70b",
-		["cerebras/llama-3.3-70b"] = "llama-3.3-70b",
-	},
-	fireworks = {
-		["fireworks/llama-3.1-8b"] = "llama-v3p1-8b-instruct",
-		["fireworks/llama-3.1-70b"] = "llama-v3p1-70b-instruct",
-		["fireworks/llama-3.1-405b"] = "llama-v3p1-405b-instruct",
-	},
-	hyperbolic = {
-		["llama-405b"] = "meta-llama/Meta-Llama-3.1-405B-Instruct",
-		["llama-3.1-405b"] = "meta-llama/Meta-Llama-3.1-405B-Instruct",
-		["llama-3.1-70b-bf16"] = "meta-llama/Meta-Llama-3.1-70B-Instruct",
-		["llama-3.1-8b-bf16"] = "meta-llama/Meta-Llama-3.1-8B-Instruct",
-	},
-	hyperbolic_base = {
-		["llama-3.1-405b-base"] = "meta-llama/Meta-Llama-3.1-405B",
-		["llama-3.1-405b-fp8-base"] = "meta-llama/Meta-Llama-3.1-405B-FP8",
-	},
-	entropix = {
-		["entropix"] = "llama-1b",
-		["llama-1b"] = "llama-1b",
-		["smollm"] = "smollm",
 	},
 }
 
@@ -155,6 +91,7 @@ Answer concisely and when asked for code avoid unnecessary verbose explanation.
 		scroll_on_focus = false, -- automatically scroll to the bottom when chat is focused
 		code_register = "c", -- register to use for yanking/pasting code
 		print_provider = false, -- print model and provider info when making requests
+		debug = false, -- enable debug logging for API requests and responses
 		finder = "telescope", -- "telescope" or "fzf" - determines which finder to use for opening chats
 		keymap = {
 			send_message = "<CR>", -- normal mode keybind in chat windows to send message
@@ -167,6 +104,7 @@ Answer concisely and when asked for code avoid unnecessary verbose explanation.
 			settings = "## Settings",
 			model = "> Model: ",
 			temp = "> Temperature: ",
+			reasoning = "> Reasoning: ",
 			system = "> System:",
 			chat = "## Chat",
 			user = "### User",
@@ -177,21 +115,6 @@ Answer concisely and when asked for code avoid unnecessary verbose explanation.
 		popup = {
 			size = 40, -- percent of screen
 			direction = "right", -- left, right, top, bottom, center
-		},
-		inline = {
-			base_model = "llama-3.1-405b-base",
-			instruct_model = "sonnet-4",
-			system_message = [[You are an expert programmer working alongside an expert colleague. 
-You will be given code snippets. 
-Interpret comments as instructions on code that needs to be written if there isn't already code addressing the comment or if the comment requests refactoring.
-Only respond with code, make all comments and explanation as code comments.
-Do not respond or acknowledge the request in any way, just start coding. Do not explain in prose what you are doing or how the code works. Code only.
-Continue where the code leaves off, do not repeat existing code. Only show the modified code.
-Just start writing code, do not format as markdown, write plain code.
-Only do exactly as instructed, do not add code that was not explicitly asked for or described. Do not add more functionality than is asked for. Do not continue the program beyond what specific functionality the user requests.
-]],
-			temp = 0.1, -- model temperature
-			max_tokens = 512, -- max length of response
 		},
 	}
 end
