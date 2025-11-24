@@ -132,7 +132,7 @@ Answer concisely and when asked for code avoid unnecessary verbose explanation.
     settings = "## Settings",
     model = "> Model: ",
     temp = "> Temperature: ",
-    system = "> System Message",
+    system = "> System:",
     chat = "## Chat",
     user = "### User",
     assistant = "### Assistant",
@@ -143,8 +143,7 @@ Answer concisely and when asked for code avoid unnecessary verbose explanation.
     direction = "right", -- left, right, top, bottom, center
   },
   inline = {
-    base_model = "llama-3.1-405b-base",
-    instruct_model = "claude-3.7-sonnet",
+    instruct_model = "claude-4.5-sonnet",
     system_message = [[You are an expert programmer working alongside an expert colleague. 
 You will be given code snippets. 
 Interpret comments as instructions on code that needs to be written if there isn't already code addressing the comment or if the comment requests refactoring.
