@@ -8,6 +8,7 @@ M.default_model_aliases = {
 		["deepseek"] = "deepseek/deepseek-v3.2-exp",
         ["qwen"] = "qwen/qwen3-235b-a22b-2507",
         ["glm"] = "z-ai/glm-4.6",
+        ["intellect"] = "prime-intellect/intellect-3",
 
 		["gemini-flash"] = "google/gemini-2.5-flash",
 		["gemini-3"] = "google/gemini-3-pro-preview",
