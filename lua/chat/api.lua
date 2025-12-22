@@ -148,9 +148,15 @@ local function get_provider(model)
 	for provider_name, provider_data in pairs(providers) do
 		local model_aliases = config.model_aliases[provider_name]
 		if model_aliases and model_aliases[model] ~= nil then
+            if config.opts.debug then
+                log_debug(string.format("Using %s as provider for %s via alias", provider_name, model))
+            end
 			-- vim.notify(string.format("Using %s as provider for %s", provider_name, model))
 			return provider_name
 		elseif provider_data.match_pattern and model:find(provider_data.match_pattern) then
+            if config.opts.debug then
+                log_debug(string.format("Using %s as provider for %s via pattern match", provider_name, model))
+            end
 			-- vim.notify(string.format("Using %s as provider for %s", provider_name, model))
 			return provider_name
 		end
