@@ -115,9 +115,6 @@ M.open = function(size, direction)
 			text = {
 				top = " Chat ",
 				top_align = "center",
-				-- todo
-				-- bottom = " Model: " .. config.opts.default_provider .. " ",
-				-- bottom_align = "left",
 			},
 		},
 		position = {

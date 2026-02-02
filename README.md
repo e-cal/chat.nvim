@@ -91,35 +91,37 @@ Defaults:
 ```lua
 {
   dir = vim.fn.stdpath("data") .. "/chat-nvim", -- dir to save/load chats
+  save_to_working_dir = false, -- save new chats to the current working directory instead of the global chat dir
   api_keys = {
     openai = function()
       return os.getenv("OPENAI_API_KEY") or vim.fn.input("OpenAI API Key: ")
     end,
     -- ... repeated for all the providers ...
   },
-  model_maps = {
+  providers = {
     openrouter = {
       ["o1"] = "openai/o1-preview", -- maps the model name "o1" to use openrouter and expand into the proper api model name "openai/o1-preview"
       -- ...
     }
     -- ...
   },
-  default = { -- default values for chat parameters (overwritten if changed inline in chat)
+  defaults = { -- default values for chat parameters (overwritten if changed inline in chat)
     title = "# New Chat",
-    model = "claude-3.7-sonnet",
+    model = "sonnet-4",
     temp = 0.8, -- model temperature
     system_message = [[You are an expert programmer working alongside an expert colleague. 
 Your colleague will ask you various questions about their code and ask you to assist with some coding tasks. 
 Answer concisely and when asked for code avoid unnecessary verbose explanation.
 ]],
   },
-  title_model = "meta-llama/llama-3.1-8b-instruct", -- model used to generate chat titles
+  title_model = "google/gemini-2.0-flash-lite-001", -- model used to generate chat titles
   auto_scroll = true, -- scroll to bottom of chat when response is finished
-  auto_format = true, -- automatically format the chat on save
-  wrap = false, -- enable line wrap (j/k are bound to gj and gk in the chat buffer so line wrap doesn't suck)
+  auto_format = false, -- automatically format the chat on save
+  wrap = true, -- enable line wrap (j/k are bound to gj and gk in the chat buffer so line wrap doesn't suck)
   scroll_on_focus = false, -- automatically scroll to the bottom when chat is focused
   code_register = "c", -- register to use for yanking/pasting code
   print_provider = false, -- print model and provider info when making requests
+  debug = false, -- enable debug logging for API requests and responses
   finder = "telescope", -- "telescope" or "fzf" - determines which finder to use for opening chats
   keymap = {
     send_message = "<CR>", -- normal mode keybind in chat windows to send message
@@ -132,30 +134,26 @@ Answer concisely and when asked for code avoid unnecessary verbose explanation.
     settings = "## Settings",
     model = "> Model: ",
     temp = "> Temperature: ",
+    reasoning = "> Reasoning: ",
     system = "> System:",
     chat = "## Chat",
     user = "### User",
     assistant = "### Assistant",
     file = "> @",
+    entropix_save_path = "> Save: ",
   },
   popup = {
     size = 40, -- percent of screen
     direction = "right", -- left, right, top, bottom, center
   },
-  inline = {
-    instruct_model = "claude-4.5-sonnet",
-    system_message = [[You are an expert programmer working alongside an expert colleague. 
-You will be given code snippets. 
-Interpret comments as instructions on code that needs to be written if there isn't already code addressing the comment or if the comment requests refactoring.
-Only respond with code, make all comments and explanation as code comments.
-Do not respond or acknowledge the request in any way, just start coding. Do not explain in prose what you are doing or how the code works. Code only.
-Continue where the code leaves off, do not repeat existing code. Only show the modified code.
-Just start writing code, do not format as markdown, write plain code.
-Only do exactly as instructed, do not add code that was not explicitly asked for or described. Do not add more functionality than is asked for. Do not continue the program beyond what specific functionality the user requests.
-]],
-    temp = 0.1, -- model temperature
-    max_tokens = 512, -- max length of response
-  },
+  -- Optional: configure inline completion (used by ChatInline command)
+  -- inline = {
+  --   instruct_model = "sonnet-4.5", -- model for code instruction following
+  --   base_model = "gpt-4o", -- model for base completions (optional)
+  --   system_message = [[You are an expert programmer...]],
+  --   temp = 0.1,
+  --   max_tokens = 512,
+  -- },
 
 }
 ```

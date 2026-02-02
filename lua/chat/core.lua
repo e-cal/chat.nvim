@@ -20,7 +20,7 @@ local function parse_messages(bufnr)
 	local messages = {}
 	local role = nil
 	local content = {}
-	local model = config.opts.default.model
+	local model = config.opts.defaults.model
 	local temp = nil
 	local reasoning = nil
 
@@ -258,7 +258,7 @@ M.send_message = function()
 
 	vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, { "", "", config.opts.delimiters.assistant, "", "" })
 
-	if buf_lines[1] == config.opts.default.title then
+	if buf_lines[1] == config.opts.defaults.title then
 		generate_title(messages, bufnr)
 	end
 

@@ -9,7 +9,7 @@ M.create_new_chat = function(selection, ft)
 	for _, file in ipairs(vim.fn.readdir(config.opts.dir)) do
 		local path = string.format("%s/%s", config.opts.dir, file)
 		local lines = vim.fn.readfile(path)
-		if lines[1] == config.opts.default.title then
+		if lines[1] == config.opts.defaults.title then
 			vim.cmd("edit " .. path)
 			return vim.api.nvim_get_current_buf()
 		end
@@ -22,19 +22,19 @@ M.create_new_chat = function(selection, ft)
 	local bufnr = vim.api.nvim_get_current_buf()
 
 	local lines = {
-		config.opts.default.title,
+		config.opts.defaults.title,
 		"",
 		config.opts.delimiters.settings,
 		"",
-		config.opts.delimiters.model .. config.opts.default.model,
+		config.opts.delimiters.model .. config.opts.defaults.model,
 		"",
-		config.opts.delimiters.temp .. config.opts.default.temp,
+		config.opts.delimiters.temp .. config.opts.defaults.temp,
 		"",
 		'<!--' .. config.opts.delimiters.reasoning .. 'medium -->',
 		"",
 		config.opts.delimiters.system,
 		"",
-		config.opts.default.system_message:gsub("\n", " "),
+		config.opts.defaults.system_message:gsub("\n", " "),
 		"",
 		config.opts.delimiters.chat,
 		"",

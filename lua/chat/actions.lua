@@ -141,7 +141,7 @@ M.complete_inline = function(context, _model)
 				-- P(chunk_data)
 
 				local chunk_content
-				if chunk_data.choices ~= nil then -- openai-style api
+				if chunk_data.choices ~= nil and chunk_data.choices[1] ~= nil then -- openai-style api
 					if chunk_data.choices[1].delta ~= nil then
 						chunk_content = chunk_data.choices[1].delta.content
 					else -- base model

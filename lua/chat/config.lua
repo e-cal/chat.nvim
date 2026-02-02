@@ -75,8 +75,11 @@ M.defaults = function()
 			openrouter = function()
 				return os.getenv("OPENROUTER_API_KEY") or vim.fn.input("OpenRouter API Key: ")
 			end,
+			opencode = function()
+				return os.getenv("OPENCODE_API_KEY") or vim.fn.input("OpenCode (Zen) API Key: ")
+			end,
 		},
-		default = { -- default values for chat parameters (overwritten if changed inline in chat)
+		defaults = { -- default values for chat parameters (overwritten if changed inline in chat)
 			title = "# New Chat",
 			model = "sonnet-4",
 			temp = 0.8, -- model temperature
@@ -124,8 +127,8 @@ M.setup = function(opts)
 	opts = opts or {}
 	M.opts = vim.tbl_deep_extend("force", {}, M.defaults(), opts)
 	M.model_aliases = vim.deepcopy(M.default_model_aliases)
-	if opts.model_maps then
-		for provider, model_map in pairs(opts.model_maps) do
+	if opts.providers then
+		for provider, model_map in pairs(opts.providers) do
 			M.model_aliases[provider] = vim.tbl_deep_extend("force", M.model_aliases[provider] or {}, model_map)
 		end
 	end

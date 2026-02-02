@@ -94,6 +94,44 @@ local providers = {
 			return data
 		end,
 	},
+	opencode = {
+		match_pattern = "opencode/",
+		url = "https://opencode.ai/zen/v1/chat/completions",
+		get_url = function(model)
+			local actual_model = model:gsub("^opencode/", "")
+			local model_lower = actual_model:lower()
+			if model_lower:find("^gpt") or model_lower:find("^o%d") then
+				return "https://opencode.ai/zen/v1/responses"
+			elseif model_lower:find("^claude") then
+				return "https://opencode.ai/zen/v1/messages"
+			elseif model_lower:find("^gemini") then
+				return "https://opencode.ai/zen/v1/models/" .. actual_model
+			else
+				return "https://opencode.ai/zen/v1/chat/completions"
+			end
+		end,
+		headers = function()
+			return {
+				["Content-Type"] = "application/json",
+				["Authorization"] = "Bearer " .. get_api_key("opencode"),
+			}
+		end,
+		prepare_data = function(data, model)
+			-- Remove the "opencode/" prefix from the model name
+			data.model = model:gsub("^opencode/", "")
+
+			-- Handle Anthropic-style data format for Claude models
+			local model_lower = data.model:lower()
+			if model_lower:find("^claude") then
+				data.max_tokens = 4096
+				if data.messages[1] and data.messages[1].role == "system" then
+					data.system = data.messages[1].content
+					table.remove(data.messages, 1)
+				end
+			end
+			return data
+		end,
+	},
 }
 
 local function exec(cmd, args, on_stdout, on_complete)
@@ -173,6 +211,11 @@ local function get_curl_args(messages, model, temp, reasoning, stream)
 	end
 	local provider = providers[provider_name]
 	local url = provider.url
+
+	-- Support dynamic URL selection based on model
+	if provider.get_url then
+		url = provider.get_url(model)
+	end
 	local headers
 	if provider.headers then
 		headers = provider.headers()
@@ -291,12 +334,17 @@ local function handle_stream_chunk(chunk, bufnr, raw_chunks, state)
 			return content ~= nil and content ~= vim.NIL and content ~= ""
 		end
 
-		local chunk_content = nil
-		if chunk_data.choices ~= nil then
-			local chunk_delta = chunk_data.choices[1].delta
+	local chunk_content = nil
+	if chunk_data.choices ~= nil and chunk_data.choices[1] ~= nil then
+		local chunk_delta = chunk_data.choices[1].delta
 
-			-- Check for signature in reasoning_details
-			if chunk_delta.reasoning_details and type(chunk_delta.reasoning_details) == "table" then
+		-- Skip if delta is nil
+		if chunk_delta == nil then
+			goto continue
+		end
+
+		-- Check for signature in reasoning_details
+		if chunk_delta.reasoning_details and type(chunk_delta.reasoning_details) == "table" then
 				for _, detail in ipairs(chunk_delta.reasoning_details) do
 					if detail.signature and detail.signature ~= "" then
 						state.reasoning_signature = detail.signature
