@@ -3,6 +3,9 @@ local config = require("chat.config")
 local M = {}
 
 M.create_new_chat = function(selection, ft)
+	if vim.fn.isdirectory(config.opts.dir) ~= 1 then
+		vim.fn.mkdir(config.opts.dir, "p")
+	end
 	for _, file in ipairs(vim.fn.readdir(config.opts.dir)) do
 		local path = string.format("%s/%s", config.opts.dir, file)
 		local lines = vim.fn.readfile(path)
@@ -56,6 +59,10 @@ M.create_new_chat = function(selection, ft)
 end
 
 M.load_last_chat = function(selection, ft)
+	if vim.fn.isdirectory(config.opts.dir) ~= 1 then
+		vim.api.nvim_err_writeln("No existing chat files found in " .. config.opts.dir)
+		return nil
+	end
 	local latest_file = nil
 	local latest_time = 0
 	for _, file in ipairs(vim.fn.readdir(config.opts.dir)) do
@@ -181,6 +188,11 @@ M.open_chat = function(filename, popup)
 				"FZF-Vim is not installed. Please install it or set config.opts.finder = 'telescope'.",
 				vim.log.levels.ERROR
 			)
+			return
+		end
+
+		if vim.fn.isdirectory(config.opts.dir) ~= 1 then
+			vim.notify("No existing chat files found in " .. config.opts.dir, vim.log.levels.INFO)
 			return
 		end
 
